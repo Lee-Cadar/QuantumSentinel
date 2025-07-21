@@ -1,0 +1,160 @@
+# app.py - AXIOM Sentinel V2: Unified, Robust Rebuild 🚀
+import sqlite3
+import pandas as pd
+import torch
+import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
+from sklearn.preprocessing import MinMaxScaler
+import numpy as np
+from flask import Flask, render_template_string, request, jsonify
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
+from pulp import LpMinimize, LpProblem, LpVariable, lpSum, value
+import requests  # For API refreshes
+from datetime import datetime
+
+app = Flask(__name__)
+
+# DB Setup & Loader (Consolidate Phase 1 logic)
+conn = sqlite3.connect('sentinel_full_data.db', check_same_thread=False)
+def refresh_db():
+    # Mock API pull for freshness (expand with your sources)
+    try:
+        usgs_url = 'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=2020-01-01&endtime=' + datetime.now().strftime('%Y-%m-%d') + '&minmagnitude=4.5&limit=10'
+        response = requests.get(usgs_url)
+        features = response.json()['features']
+        data = [{'disaster_type': 'earthquake', 'date': pd.to_datetime(f['properties']['time'], unit='ms').isoformat(),
+                 'location_lat': f['geometry']['coordinates'][1], 'location_lon': f['geometry']['coordinates'][0],
+                 'intensity': f['properties']['mag'], 'description': f['properties']['title'], 'source': 'USGS'}
+                for f in features]
+        df = pd.DataFrame(data)
+        df.to_sql('disasters', conn, if_exists='append', index=False)
+    except Exception as e:
+        print(f"DB refresh error: {e}")
+refresh_db()  # Run on start
+
+# LSTM Model (From Phase 2/3, generalized)
+class LSTMModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.lstm = nn.LSTM(1, 50, batch_first=True)
+        self.fc = nn.Linear(50, 1)
+    def forward(self, x):
+        out, _ = self.lstm(x)
+        return self.fc(out[:, -1, :])
+
+models = {}  # Load or train on-demand
+scalers = {}
+def get_model(disaster):
+    if disaster not in models:
+        df = pd.read_sql(f"SELECT * FROM disasters WHERE disaster_type = '{disaster}'", conn)
+        if len(df) < 10: return None
+        df['date'] = pd.to_datetime(df['date'])
+        df = df.sort_values('date')
+        scalers[disaster] = MinMaxScaler()
+        df['intensity_scaled'] = scalers[disaster].fit_transform(df['intensity'].values.reshape(-1, 1))
+        seq_len = 5
+        X, y = [], []
+        for i in range(len(df) - seq_len):
+            X.append(df['intensity_scaled'].values[i:i+seq_len])
+            y.append(df['intensity_scaled'].values[i+seq_len])
+        if not X: return None
+        X, y = np.array(X).reshape(-1, seq_len, 1), np.array(y).reshape(-1, 1)
+        dataset = Dataset(torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.float32))  # Custom Dataset
+        loader = DataLoader(dataset, batch_size=32, shuffle=True)
+        model = LSTMModel()
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+        criterion = nn.MSELoss()
+        for _ in range(5):  # Quick train
+            for inputs, targets in loader:
+                optimizer.zero_grad()
+                loss = criterion(model(inputs), targets)
+                loss.backward()
+                optimizer.step()
+        models[disaster] = model
+    return models[disaster]
+
+# Prediction Func
+def predict_next(disaster, last_seq):
+    model = get_model(disaster)
+    if not model: return "Model unavailable—data sparse."
+    model.eval()
+    with torch.no_grad():
+        pred = model(torch.tensor(last_seq.reshape(1, -1, 1), dtype=torch.float32)).item()
+    return scalers[disaster].inverse_transform([[pred]])[0][0]
+
+# Heatmap Gen (Base64 for embed)
+def generate_heatmap(disaster):
+    df = pd.read_sql(f"SELECT * FROM disasters WHERE disaster_type = '{disaster}'", conn).dropna(subset=['location_lat', 'location_lon'])
+    if df.empty: return ""
+    fig, ax = plt.subplots()
+    ax.scatter(df['location_lon'], df['location_lat'], c=df['intensity'], cmap='Reds')
+    ax.set_title(f'{disaster.capitalize()} Heatmap')
+    buf = BytesIO()
+    fig.savefig(buf, format='png')
+    buf.seek(0)
+    return base64.b64encode(buf.read()).decode()
+
+# Routes
+@app.route('/')
+def home():
+    df_recent = pd.read_sql("SELECT * FROM disasters ORDER BY date DESC LIMIT 10", conn)
+    table_html = df_recent.to_html(index=False)
+    return render_template_string("""
+    <html><head><title>AXIOM Sentinel</title><style>body{font-family:Arial;}</style></head>
+    <body><h1>AXIOM Sentinel: AI-Powered Resilience</h1>
+    <p>Innovate. Create. Dominate. Protecting against 9 disasters with AI precision.</p>
+    <a href="/dashboard">View Dashboard</a> | <a href="/predictions">See Predictions</a>
+    <h2>Recent Activity</h2>{{ table_html|safe }}</body></html>
+    """, table_html=table_html)
+
+@app.route('/dashboard')
+def dashboard():
+    heatmap = generate_heatmap('earthquake')  # Example; param later
+    return render_template_string("""
+    <html><body><h1>Dashboard</h1>
+    <p>Geospatial Overview & Alerts</p>
+    <img src="data:image/png;base64,{{ heatmap }}" alt="Heatmap">
+    <form action="/report" method="post">
+        Report Incident: <input name="text"><input type="submit">
+    </form></body></html>
+    """, heatmap=heatmap)
+
+@app.route('/predictions')
+def predictions():
+    # Example pred
+    disaster = 'earthquake'
+    df = pd.read_sql(f"SELECT intensity_scaled FROM disasters WHERE disaster_type = '{disaster}' ORDER BY date DESC LIMIT 5", conn)
+    if len(df) < 5: return "Data insufficient."
+    last_seq = df['intensity_scaled'].values
+    pred = predict_next(disaster, last_seq)
+    return render_template_string("""
+    <html><body><h1>Predictions</h1>
+    <p>Next {{ disaster }} Intensity: {{ pred }}</p>
+    <form action="/optimize" method="post">
+        Optimize Route: <input name="user_lat" placeholder="Lat"><input name="user_lon" placeholder="Lon"><input type="submit">
+    </form></body></html>
+    """, disaster=disaster, pred=pred)
+
+@app.route('/report', methods=['POST'])
+def report():
+    text = request.form['text']
+    # Mock NLP verify
+    if 'earthquake' in text.lower():
+        return jsonify({'status': 'Verified & Added'})
+    return jsonify({'status': 'Unverified'})
+
+@app.route('/optimize', methods=['POST'])
+def optimize():
+    # Mock PuLP from Phase 3
+    prob = LpProblem("EvacRoute", LpMinimize)
+    # Simplified: Assume vars
+    x = LpVariable("Route1", cat='Binary')
+    prob += x * 10  # Mock cost
+    prob += x == 1
+    prob.solve()
+    return jsonify({'route': 'Optimal Path', 'cost': value(prob.objective)})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080, debug=True)
