@@ -43,12 +43,14 @@ Preferred communication style: Simple, everyday language.
 - **Activity Feed**: Chronological list of recent disasters with verification status
 
 ### 3. AI Prediction Engine
-- **OpenAI Integration**: Advanced AI-powered earthquake prediction using GPT-4o
+- **Ollama Integration**: Local AI-powered earthquake prediction using Llama 3.2 model
+- **No External Dependencies**: Complete offline functionality without API keys
 - **Multi-Source Data**: Real-time data from USGS, EMSC, and historical patterns
 - **Scientific Analysis**: Seismological principles including Gutenberg-Richter law and plate tectonics
 - **Confidence Scoring**: AI-generated reliability metrics with detailed reasoning
 - **Model Metrics**: Real-time tracking of accuracy, precision, recall, and prediction counts
 - **Continuous Learning**: Model training with new earthquake data for improved accuracy
+- **Fallback Mode**: Statistical analysis when Ollama is unavailable
 
 ### 4. Alert System
 - **Real-time Alerts**: Active alert banner with dismissal functionality
@@ -100,11 +102,17 @@ Preferred communication style: Simple, everyday language.
 - **Database**: Drizzle ORM with PostgreSQL support (@neondatabase/serverless)
 - **Validation**: Zod for runtime type checking
 - **Session Management**: Connect-pg-simple for PostgreSQL sessions
+- **AI Processing**: Ollama for local AI inference (Llama 3.2 model)
 - **Development**: tsx for TypeScript execution, esbuild for production builds
 
 ### External APIs
 - **USGS Earthquake API**: Real-time seismic data
+- **Local AI**: Ollama service running on localhost:11434
 - **Extensible**: Architecture supports additional disaster data sources
+
+### Setup Requirements
+- **Ollama Installation**: Local Ollama service with llama3.2 model
+- **See OLLAMA_SETUP.md**: Complete installation and configuration guide
 
 ## Deployment Strategy
 

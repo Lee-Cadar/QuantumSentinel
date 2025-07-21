@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertDisasterSchema, insertIncidentSchema, insertPredictionSchema, insertAlertSchema } from "@shared/schema";
-import { earthquakePredictionAI } from "./ai-prediction";
+import { ollamaEarthquakePredictionAI } from "./ollama-prediction";
 import { z } from "zod";
 
 const routeOptimizationSchema = z.object({
@@ -206,9 +206,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { disasterType, region } = req.body;
       
       if (disasterType === 'earthquake') {
-        // Use AI prediction for earthquakes
-        console.log('Generating AI earthquake prediction...');
-        const aiPrediction = await earthquakePredictionAI.generatePrediction(region);
+        // Use Ollama AI prediction for earthquakes
+        console.log('Generating Ollama AI earthquake prediction...');
+        const aiPrediction = await ollamaEarthquakePredictionAI.generatePrediction(region);
         
         const prediction = await storage.createPrediction({
           disasterType: 'earthquake',
@@ -253,7 +253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Model metrics endpoint
   app.get("/api/predictions/model-metrics", async (req, res) => {
     try {
-      const metrics = earthquakePredictionAI.getModelMetrics();
+      const metrics = ollamaEarthquakePredictionAI.getModelMetrics();
       res.json(metrics);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch model metrics" });
@@ -264,16 +264,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/predictions/train", async (req, res) => {
     try {
       console.log('Fetching new earthquake data for training...');
-      const earthquakeData = await earthquakePredictionAI.fetchMultiSourceEarthquakeData();
+      const earthquakeData = await ollamaEarthquakePredictionAI.fetchMultiSourceEarthquakeData();
       
-      await earthquakePredictionAI.storeTrainingData(earthquakeData);
-      await earthquakePredictionAI.evaluatePredictionAccuracy(earthquakeData);
+      await ollamaEarthquakePredictionAI.storeTrainingData(earthquakeData);
+      await ollamaEarthquakePredictionAI.evaluatePredictionAccuracy(earthquakeData);
       
       res.json({ 
         message: `Model trained with ${earthquakeData.length} earthquake records`,
         dataPoints: earthquakeData.length,
         sources: ['USGS', 'EMSC', 'Historical'],
-        metrics: earthquakePredictionAI.getModelMetrics()
+        metrics: ollamaEarthquakePredictionAI.getModelMetrics()
       });
     } catch (error) {
       console.error('Model training error:', error);

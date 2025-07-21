@@ -34,8 +34,8 @@ export default function PredictionPanel() {
       const data = await response.json();
       setLastPrediction(data);
       toast({
-        title: "AI Prediction Generated",
-        description: "New prediction based on real-time earthquake data analysis.",
+        title: "Ollama AI Prediction Generated",
+        description: "Local AI analysis of real-time earthquake data completed.",
       });
     },
     onError: (error: any) => {
@@ -95,11 +95,11 @@ export default function PredictionPanel() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Brain className="h-5 w-5" style={{ color: 'var(--emergency-red)' }} />
-            <h2 className="text-xl font-bold text-slate-900">AI Earthquake Prediction</h2>
+            <h2 className="text-xl font-bold text-slate-900">Ollama AI Earthquake Prediction</h2>
           </div>
           <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--safe-green)' }}>
             <Activity className="h-4 w-4" />
-            <span>Real-time Analysis</span>
+            <span>Local AI Processing</span>
           </div>
         </div>
       </CardHeader>
@@ -226,7 +226,7 @@ export default function PredictionPanel() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="earthquake">🌍 Earthquake (AI Powered)</SelectItem>
+                    <SelectItem value="earthquake">🌍 Earthquake (Ollama AI)</SelectItem>
                     <SelectItem value="wildfire">🔥 Wildfire (Statistical)</SelectItem>
                     <SelectItem value="flood">🌊 Flood (Statistical)</SelectItem>
                   </SelectContent>
@@ -252,8 +252,8 @@ export default function PredictionPanel() {
               disabled={generateMutation.isPending}
             >
               <Brain className="h-4 w-4 mr-2" />
-              {generateMutation.isPending ? "Analyzing Data..." : 
-               selectedType === 'earthquake' ? "Generate AI Prediction" : "Generate Statistical Prediction"}
+              {generateMutation.isPending ? "Analyzing with Ollama..." : 
+               selectedType === 'earthquake' ? "Generate Ollama AI Prediction" : "Generate Statistical Prediction"}
             </Button>
           </div>
 
@@ -261,21 +261,39 @@ export default function PredictionPanel() {
           <div className="bg-blue-50 p-3 rounded-lg">
             <div className="flex items-center space-x-2 mb-2">
               <Database className="h-4 w-4" style={{ color: 'hsl(207, 90%, 54%)' }} />
-              <span className="text-sm font-medium text-slate-900">Real-time Data Sources</span>
+              <span className="text-sm font-medium text-slate-900">System Status & Data Sources</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs" style={{ color: 'var(--neutral-gray)' }}>
-              <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--safe-green)' }}></div>
-                <span>USGS Earthquake API</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2 text-xs">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--warning-orange)' }}></div>
+                  <span style={{ color: 'var(--neutral-gray)' }}>Ollama AI (Local - Setup Required)</span>
+                </div>
+                <div className="flex items-center space-x-2 text-xs">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--safe-green)' }}></div>
+                  <span style={{ color: 'var(--neutral-gray)' }}>Statistical Analysis (Active)</span>
+                </div>
               </div>
-              <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--safe-green)' }}></div>
-                <span>EMSC Seismological</span>
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2 text-xs">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--safe-green)' }}></div>
+                  <span style={{ color: 'var(--neutral-gray)' }}>USGS Earthquake API</span>
+                </div>
+                <div className="flex items-center space-x-2 text-xs">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--safe-green)' }}></div>
+                  <span style={{ color: 'var(--neutral-gray)' }}>Historical Patterns (1500+ records)</span>
+                </div>
               </div>
-              <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--safe-green)' }}></div>
-                <span>Historical Patterns</span>
+            </div>
+            <div className="bg-orange-50 border border-orange-200 rounded p-2">
+              <div className="flex items-center space-x-1 mb-1">
+                <AlertTriangle className="h-3 w-3" style={{ color: 'var(--warning-orange)' }} />
+                <span className="text-xs font-medium" style={{ color: 'var(--warning-orange)' }}>Ollama Setup Required</span>
               </div>
+              <p className="text-xs" style={{ color: 'var(--neutral-gray)' }}>
+                Install Ollama locally for advanced AI predictions. Currently using statistical analysis with real earthquake data.
+                <br />See OLLAMA_SETUP.md for installation instructions.
+              </p>
             </div>
           </div>
         </div>
