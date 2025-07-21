@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertDisasterSchema, insertIncidentSchema, insertPredictionSchema, insertAlertSchema } from "@shared/schema";
+import { earthquakePredictionAI } from "./ai-prediction";
 import { z } from "zod";
 
 const routeOptimizationSchema = z.object({
@@ -202,29 +203,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/predictions/generate", async (req, res) => {
     try {
-      const { disasterType } = req.body;
+      const { disasterType, region } = req.body;
       
-      // Get historical data for this disaster type
-      const historicalData = await storage.getDisastersByType(disasterType);
-      
-      // Generate prediction
-      const { intensity, confidence } = generatePrediction(disasterType, historicalData);
-      
-      if (intensity > 0) {
+      if (disasterType === 'earthquake') {
+        // Use AI prediction for earthquakes
+        console.log('Generating AI earthquake prediction...');
+        const aiPrediction = await earthquakePredictionAI.generatePrediction(region);
+        
         const prediction = await storage.createPrediction({
-          disasterType,
-          predictedIntensity: intensity,
-          confidence,
-          timeframe: "24 hours",
-          location: "Bay Area region"
+          disasterType: 'earthquake',
+          predictedIntensity: aiPrediction.predictedMagnitude,
+          confidence: aiPrediction.confidence,
+          timeframe: aiPrediction.timeframe,
+          location: aiPrediction.location
         });
         
-        res.json(prediction);
+        res.json({
+          ...prediction,
+          reasoning: aiPrediction.reasoning,
+          riskLevel: aiPrediction.riskLevel,
+          keyFactors: aiPrediction.keyFactors,
+          recommendedActions: aiPrediction.recommendedActions
+        });
       } else {
-        res.json({ message: "Insufficient data for prediction" });
+        // Fallback to statistical prediction for other disaster types
+        const historicalData = await storage.getDisastersByType(disasterType);
+        const { intensity, confidence } = generatePrediction(disasterType, historicalData);
+        
+        if (intensity > 0) {
+          const prediction = await storage.createPrediction({
+            disasterType,
+            predictedIntensity: intensity,
+            confidence,
+            timeframe: "24 hours",
+            location: "Regional area"
+          });
+          
+          res.json(prediction);
+        } else {
+          res.json({ message: "Insufficient data for prediction" });
+        }
       }
     } catch (error) {
-      res.status(500).json({ error: "Failed to generate prediction" });
+      console.error('Prediction generation error:', error);
+      res.status(500).json({ error: "Failed to generate prediction", details: error.message });
+    }
+  });
+
+  // AI Model metrics endpoint
+  app.get("/api/predictions/model-metrics", async (req, res) => {
+    try {
+      const metrics = earthquakePredictionAI.getModelMetrics();
+      res.json(metrics);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch model metrics" });
+    }
+  });
+
+  // Train model with new data
+  app.post("/api/predictions/train", async (req, res) => {
+    try {
+      console.log('Fetching new earthquake data for training...');
+      const earthquakeData = await earthquakePredictionAI.fetchMultiSourceEarthquakeData();
+      
+      await earthquakePredictionAI.storeTrainingData(earthquakeData);
+      await earthquakePredictionAI.evaluatePredictionAccuracy(earthquakeData);
+      
+      res.json({ 
+        message: `Model trained with ${earthquakeData.length} earthquake records`,
+        dataPoints: earthquakeData.length,
+        sources: ['USGS', 'EMSC', 'Historical'],
+        metrics: earthquakePredictionAI.getModelMetrics()
+      });
+    } catch (error) {
+      console.error('Model training error:', error);
+      res.status(500).json({ error: "Failed to train model", details: error.message });
     }
   });
 

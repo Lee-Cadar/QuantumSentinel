@@ -43,9 +43,12 @@ Preferred communication style: Simple, everyday language.
 - **Activity Feed**: Chronological list of recent disasters with verification status
 
 ### 3. AI Prediction Engine
-- **Machine Learning**: Basic trend analysis and prediction algorithms
-- **Confidence Scoring**: Reliability metrics for predictions
-- **Multiple Disaster Types**: Support for earthquakes, wildfires, floods
+- **OpenAI Integration**: Advanced AI-powered earthquake prediction using GPT-4o
+- **Multi-Source Data**: Real-time data from USGS, EMSC, and historical patterns
+- **Scientific Analysis**: Seismological principles including Gutenberg-Richter law and plate tectonics
+- **Confidence Scoring**: AI-generated reliability metrics with detailed reasoning
+- **Model Metrics**: Real-time tracking of accuracy, precision, recall, and prediction counts
+- **Continuous Learning**: Model training with new earthquake data for improved accuracy
 
 ### 4. Alert System
 - **Real-time Alerts**: Active alert banner with dismissal functionality
