@@ -56,7 +56,14 @@ export default function EarthquakeMap({
     }))
   ];
 
-  const getRiskColor = (riskLevel: string, magnitude: number) => {
+  const getRiskColor = (riskLevel: string, magnitude: number, isPrediction: boolean = false) => {
+    if (isPrediction) {
+      // Purple tones for predictions
+      if (riskLevel === 'high' || magnitude >= 6.0) return '#7c3aed'; // purple-600
+      if (riskLevel === 'medium' || magnitude >= 4.0) return '#a855f7'; // purple-500
+      return '#c084fc'; // purple-400
+    }
+    // Original colors for real earthquakes
     if (riskLevel === 'high' || magnitude >= 6.0) return '#dc2626'; // red
     if (riskLevel === 'medium' || magnitude >= 4.0) return '#f59e0b'; // orange
     return '#10b981'; // green
@@ -87,16 +94,17 @@ export default function EarthquakeMap({
 
     // Add earthquake markers
     allLocations.forEach((location, index) => {
-      const color = getRiskColor(location.riskLevel, location.magnitude);
+      const isPrediction = location.reasoning?.includes('AI Prediction') || false;
+      const color = getRiskColor(location.riskLevel, location.magnitude, isPrediction);
       
-      // Create custom icon based on risk level
+      // Create custom icon based on risk level and type
       const customIcon = L.divIcon({
         html: `<div style="
           background-color: ${color};
           width: ${Math.max(12, location.magnitude * 3)}px;
           height: ${Math.max(12, location.magnitude * 3)}px;
-          border-radius: 50%;
-          border: 2px solid white;
+          border-radius: ${isPrediction ? '10%' : '50%'};
+          border: ${isPrediction ? '3px solid #6b21a8' : '2px solid white'};
           box-shadow: 0 2px 4px rgba(0,0,0,0.3);
           display: flex;
           align-items: center;
@@ -104,8 +112,9 @@ export default function EarthquakeMap({
           color: white;
           font-size: 10px;
           font-weight: bold;
-        ">${location.magnitude.toFixed(1)}</div>`,
-        className: 'earthquake-marker',
+          ${isPrediction ? 'animation: pulse 2s infinite;' : ''}
+        ">${isPrediction ? '🔮' : location.magnitude.toFixed(1)}</div>`,
+        className: `earthquake-marker ${isPrediction ? 'prediction-marker' : 'real-marker'}`,
         iconSize: [Math.max(12, location.magnitude * 3), Math.max(12, location.magnitude * 3)],
         iconAnchor: [Math.max(6, location.magnitude * 1.5), Math.max(6, location.magnitude * 1.5)]
       });
@@ -116,7 +125,15 @@ export default function EarthquakeMap({
       // Create popup content
       const popupContent = `
         <div style="font-family: system-ui; min-width: 200px;">
-          <h4 style="margin: 0 0 8px 0; color: #1f2937;">${location.location}</h4>
+          <h4 style="margin: 0 0 8px 0; color: #1f2937;">
+            ${isPrediction ? '🔮 ' : '🌍 '}${location.location}
+          </h4>
+          <div style="margin-bottom: 4px;">
+            <strong>Type:</strong> 
+            <span style="color: ${isPrediction ? '#7c3aed' : '#059669'}; font-weight: bold;">
+              ${isPrediction ? 'AI PREDICTION' : 'REAL EARTHQUAKE'}
+            </span>
+          </div>
           <div style="margin-bottom: 4px;">
             <strong>Magnitude:</strong> ${location.magnitude.toFixed(1)}
           </div>
@@ -125,12 +142,17 @@ export default function EarthquakeMap({
             <span style="color: ${color}; font-weight: bold;">${location.riskLevel.toUpperCase()}</span>
           </div>
           <div style="margin-bottom: 4px;">
-            <strong>Confidence:</strong> ${location.confidence}%
+            <strong>Confidence:</strong> ${location.confidence.toFixed(0)}%
           </div>
           <div style="margin-bottom: 8px;">
             <strong>Coordinates:</strong> ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}
           </div>
-          <div style="font-size: 12px; color: #6b7280;">
+          ${location.timestamp ? `
+          <div style="margin-bottom: 8px;">
+            <strong>Time:</strong> ${new Date(location.timestamp).toLocaleString()}
+          </div>
+          ` : ''}
+          <div style="font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 8px;">
             ${location.reasoning}
           </div>
         </div>
@@ -173,18 +195,36 @@ export default function EarthquakeMap({
       </CardHeader>
       <CardContent>
         <div className="mb-4">
-          <div className="flex gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              <span>High Risk (6.0+ magnitude)</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            <div className="space-y-2">
+              <h4 className="font-semibold text-xs text-gray-600 uppercase tracking-wide">Real Earthquakes</h4>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <span>High Risk (6.0+)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                <span>Medium Risk (4.0-5.9)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <span>Low Risk (&lt;4.0)</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-              <span>Medium Risk (4.0-5.9)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              <span>Low Risk (&lt;4.0)</span>
+            <div className="space-y-2">
+              <h4 className="font-semibold text-xs text-gray-600 uppercase tracking-wide">AI Predictions</h4>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-purple-600"></div>
+                <span>High Risk (6.0+)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-purple-500"></div>
+                <span>Medium Risk (4.0-5.9)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-purple-400"></div>
+                <span>Low Risk (&lt;4.0)</span>
+              </div>
             </div>
           </div>
         </div>

@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Earthquake map prediction marker animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+.prediction-marker {
+  animation: pulse 2s infinite;
+}
+
+.real-marker {
+  transition: transform 0.2s ease-in-out;
+}
+
+.real-marker:hover {
+  transform: scale(1.1);
+}
+
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(20, 14.3%, 4.1%);
