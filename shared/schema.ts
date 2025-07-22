@@ -98,15 +98,50 @@ export const earthquakeData = pgTable("earthquake_data", {
   source: text("source").default("USGS"),
 });
 
-// Add AI model metrics tracking
+// Add AI model metrics tracking with training session data
 export const modelMetrics = pgTable("model_metrics", {
   id: serial("id").primaryKey(),
+  modelType: text("model_type").notNull(), // 'pytorch', 'ollama', 'hybrid'
   accuracy: real("accuracy").notNull(),
   precision: real("precision").notNull(),
   recall: real("recall").notNull(),
+  f1Score: real("f1_score"),
   totalPredictions: integer("total_predictions").default(0),
+  correctPredictions: integer("correct_predictions").default(0),
+  trainingDataCount: integer("training_data_count").default(0),
+  trainingSessions: integer("training_sessions").default(0),
+  lastTrainingDuration: integer("last_training_duration"), // in seconds
+  modelVersion: text("model_version").default("1.0"),
   lastUpdated: timestamp("last_updated").notNull(),
-  modelType: text("model_type").default("ollama"),
+});
+
+// Add training session logs
+export const trainingLogs = pgTable("training_logs", {
+  id: serial("id").primaryKey(),
+  modelType: text("model_type").notNull(),
+  sessionId: text("session_id").notNull(),
+  epoch: integer("epoch"),
+  loss: real("loss"),
+  accuracy: real("accuracy"),
+  precision: real("precision"),
+  recall: real("recall"),
+  f1Score: real("f1_score"),
+  dataPointsUsed: integer("data_points_used"),
+  timestamp: timestamp("timestamp").notNull(),
+});
+
+// Add prediction reports table
+export const predictionReports = pgTable("prediction_reports", {
+  id: serial("id").primaryKey(),
+  predictionId: integer("prediction_id").notNull().references(() => predictions.id),
+  modelType: text("model_type").notNull(),
+  inputFeatures: jsonb("input_features"), // Recent earthquake sequence data
+  outputAnalysis: jsonb("output_analysis"), // Detailed prediction breakdown
+  confidenceFactors: jsonb("confidence_factors"), // What contributed to confidence
+  riskFactors: jsonb("risk_factors"), // Key risk indicators
+  historicalComparison: jsonb("historical_comparison"), // Similar past events
+  dataQuality: jsonb("data_quality"), // Quality metrics of input data
+  timestamp: timestamp("timestamp").notNull(),
 });
 
 // Define relations

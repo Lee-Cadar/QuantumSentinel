@@ -4,6 +4,17 @@ import { storage } from "./storage";
 import { insertDisasterSchema, insertIncidentSchema, insertPredictionSchema, insertAlertSchema } from "@shared/schema";
 import { ollamaEarthquakePredictionAI } from "./ollama-prediction";
 import { pyTorchEarthquakePrediction } from "./pytorch-prediction";
+
+// Initialize enhanced hybrid prediction system
+const enhancedHybridSystem = (() => {
+  try {
+    const { EnhancedHybridPrediction } = require('./enhanced-hybrid-prediction');
+    return new EnhancedHybridPrediction();
+  } catch (error) {
+    console.warn('Enhanced hybrid system not available, using fallback');
+    return null;
+  }
+})();
 import { disasterNewsService } from "./news-service";
 import { z } from "zod";
 
@@ -245,10 +256,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (disasterType === 'earthquake') {
         if (predictionType === 'hybrid') {
-          // Use hybrid PyTorch + Ollama prediction
-          console.log('Generating hybrid PyTorch + Ollama earthquake prediction...');
-          const hybridPrediction = await pyTorchEarthquakePrediction.generateHybridPrediction(region);
-          res.json(hybridPrediction);
+          // Use enhanced hybrid prediction system
+          console.log('Generating enhanced hybrid prediction...');
+          if (enhancedHybridSystem) {
+            const hybridReport = await enhancedHybridSystem.generateHybridPrediction(region);
+            res.json(hybridReport);
+          } else {
+            // Fallback to original hybrid
+            const hybridPrediction = await pyTorchEarthquakePrediction.generateHybridPrediction(region);
+            res.json(hybridPrediction);
+          }
         } else if (predictionType === 'pytorch') {
           // Use PyTorch-only prediction
           console.log('Generating PyTorch-only earthquake prediction...');
@@ -335,13 +352,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Train model with new data
+  // Enhanced model training endpoint
   app.post("/api/predictions/train", async (req, res) => {
     try {
-      const { model = 'ollama' } = req.body;
+      const { model = 'pytorch' } = req.body;
+      console.log(`Training ${model} model...`);
       
-      if (model === 'pytorch') {
-        console.log('Training PyTorch LSTM model...');
+      if (enhancedHybridSystem && (model === 'pytorch' || model === 'ollama')) {
+        const trainingStatus = await enhancedHybridSystem.trainModel(model);
+        res.json({
+          message: `${model.toUpperCase()} model training completed successfully`,
+          status: trainingStatus,
+          dataPoints: trainingStatus.totalDataPoints,
+          finalAccuracy: trainingStatus.currentAccuracy
+        });
+      } else if (model === 'pytorch') {
         const trainingResults = await pyTorchEarthquakePrediction.trainModel();
         res.json({
           message: 'PyTorch model training completed',
@@ -364,6 +389,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Model training error:', error);
       res.status(500).json({ error: "Failed to train model", details: error.message });
+    }
+  });
+
+  // Add training status endpoint
+  app.get("/api/predictions/training-status/:model", async (req, res) => {
+    try {
+      const { model } = req.params;
+      if (enhancedHybridSystem && (model === 'pytorch' || model === 'ollama')) {
+        const status = enhancedHybridSystem.getTrainingStatus(model as 'pytorch' | 'ollama');
+        res.json(status || { isTraining: false, progress: 0 });
+      } else {
+        res.json({ isTraining: false, progress: 0 });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get training status" });
     }
   });
 
