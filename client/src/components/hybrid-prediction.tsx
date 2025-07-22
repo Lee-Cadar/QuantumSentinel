@@ -179,18 +179,47 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
 
   const trainModelMutation = useMutation({
     mutationFn: async ({ model, sessions }: { model: 'pytorch' | 'ollama', sessions: number }) => {
-      // Start progress tracking
+      // Start progress tracking with session info
       setTrainingProgress(prev => ({
         ...prev,
         [model]: { 
           progress: 0, 
-          eta: 'Calculating...', 
+          eta: `${sessions * 2}-${sessions * 3} minutes`, 
           status: 'training', 
-          currentStep: 'Initializing...',
+          currentStep: `Starting ${sessions} session${sessions > 1 ? 's' : ''} of training...`,
           dataPointsUsed: 0,
           totalDataPoints: 0
         }
       }));
+
+      // Start a polling interval to get real training status
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusResponse = await fetch(`/api/training-status`);
+          if (statusResponse.ok) {
+            const status = await statusResponse.json();
+            const modelStatus = status[model];
+            if (modelStatus && modelStatus.isTraining) {
+              setTrainingProgress(prev => ({
+                ...prev,
+                [model]: {
+                  progress: Math.min(95, modelStatus.progress || prev[model]?.progress || 0),
+                  eta: modelStatus.eta || prev[model]?.eta || 'Calculating...',
+                  status: 'training',
+                  currentStep: modelStatus.currentStep || prev[model]?.currentStep || 'Training...',
+                  dataPointsUsed: prev[model]?.dataPointsUsed || 0,
+                  totalDataPoints: prev[model]?.totalDataPoints || 0
+                }
+              }));
+            }
+          }
+        } catch (error) {
+          console.log('Status polling error:', error);
+        }
+      }, 2000);
+
+      // Store interval reference
+      (window as any)[`${model}TrainingPoll`] = pollInterval;
       
       const response = await fetch('/api/predictions/train', {
         method: 'POST',
@@ -201,6 +230,13 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
       return response.json();
     },
     onSuccess: (result, { model, sessions }) => {
+      // Clear polling interval
+      const pollInterval = (window as any)[`${model}TrainingPoll`];
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        delete (window as any)[`${model}TrainingPoll`];
+      }
+
       // Update with final results
       setTrainingProgress(prev => ({
         ...prev,
@@ -208,18 +244,25 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
           progress: 100, 
           eta: 'Complete!', 
           status: 'completed', 
-          currentStep: `Training completed - ${sessions} session${sessions > 1 ? 's' : ''} - Final accuracy: ${result.finalAccuracy?.toFixed(1) || 'N/A'}%`,
-          dataPointsUsed: result.dataPoints || 0,
-          totalDataPoints: result.dataPoints || 0
+          currentStep: `Training completed - ${sessions} session${sessions > 1 ? 's' : ''} - Accuracy improved to ${result.metrics?.accuracy?.toFixed(1) || 'N/A'}%`,
+          dataPointsUsed: result.dataCount || 0,
+          totalDataPoints: result.dataCount || 0
         }
       }));
       toast({
         title: "Model Training Complete",
-        description: `${model.toUpperCase()} model trained for ${sessions} session${sessions > 1 ? 's' : ''} with ${result.dataPoints?.toLocaleString() || 0} data points`
+        description: `${model.toUpperCase()} model trained for ${sessions} session${sessions > 1 ? 's' : ''} with ${result.dataCount?.toLocaleString() || 0} data points`
       });
       queryClient.invalidateQueries({ queryKey: ['/api/predictions/model-metrics'] });
     },
     onError: (error, { model }) => {
+      // Clear polling interval
+      const pollInterval = (window as any)[`${model}TrainingPoll`];
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        delete (window as any)[`${model}TrainingPoll`];
+      }
+
       setTrainingProgress(prev => ({
         ...prev,
         [model]: { 
@@ -462,7 +505,7 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
             >
               <Cpu className="h-4 w-4 mr-2" />
               {trainingProgress.pytorch?.status === 'training' 
-                ? `Training Session ${Math.ceil((trainingProgress.pytorch.progress || 0) / (100 / sentinelSessionCount))} of ${sentinelSessionCount}...` 
+                ? `Training ${sentinelSessionCount} Session${sentinelSessionCount > 1 ? 's' : ''}...` 
                 : `Train Sentinel Model (${sentinelSessionCount} Session${sentinelSessionCount > 1 ? 's' : ''})`
               }
             </Button>
@@ -567,7 +610,7 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
             >
               <Brain className="h-4 w-4 mr-2" />
               {trainingProgress.ollama?.status === 'training' 
-                ? `Training Session ${Math.ceil((trainingProgress.ollama.progress || 0) / (100 / ollamaSessionCount))} of ${ollamaSessionCount}...` 
+                ? `Training ${ollamaSessionCount} Session${ollamaSessionCount > 1 ? 's' : ''}...` 
                 : `Train Ollama Model (${ollamaSessionCount} Session${ollamaSessionCount > 1 ? 's' : ''})`
               }
             </Button>

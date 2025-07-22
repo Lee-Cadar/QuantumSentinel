@@ -407,6 +407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/training-status', (req, res) => {
     try {
       const status = persistentTraining.getTrainingStatus();
+      console.log('Training status requested:', JSON.stringify(status));
       res.json(status);
     } catch (error) {
       console.error('Error getting training status:', error);
