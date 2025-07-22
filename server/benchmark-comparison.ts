@@ -72,17 +72,17 @@ class BenchmarkService {
     // Sort benchmarks by accuracy for ranking
     const sortedBenchmarks = [...this.industryBenchmarks].sort((a, b) => b.accuracy - a.accuracy);
     
-    // Find ranking positions
-    const accuracyRank = sortedBenchmarks.findIndex(model => model.accuracy <= sentinelMetrics.accuracy) + 1;
-    const precisionRank = sortedBenchmarks.findIndex(model => model.precision <= sentinelMetrics.precision) + 1;
-    const recallRank = sortedBenchmarks.findIndex(model => model.recall <= sentinelMetrics.recall) + 1;
+    // Find ranking positions - fix the logic
+    const accuracyRank = sortedBenchmarks.findIndex(model => model.accuracy < sentinelMetrics.accuracy) + 1;
+    const precisionRank = sortedBenchmarks.findIndex(model => model.precision < sentinelMetrics.precision) + 1;
+    const recallRank = sortedBenchmarks.findIndex(model => model.recall < sentinelMetrics.recall) + 1;
     
     // Calculate overall rank (weighted average)
     const overallScore = (sentinelMetrics.accuracy * 0.4) + (sentinelMetrics.precision * 0.3) + (sentinelMetrics.recall * 0.3);
     const benchmarkScores = sortedBenchmarks.map(model => 
       (model.accuracy * 0.4) + (model.precision * 0.3) + (model.recall * 0.3)
     );
-    const overallRank = benchmarkScores.findIndex(score => score <= overallScore) + 1;
+    const overallRank = benchmarkScores.findIndex(score => score < overallScore) + 1;
 
     // Generate insights
     const insights = this.generateInsights(modelType, sentinelMetrics, overallRank, sortedBenchmarks.length);

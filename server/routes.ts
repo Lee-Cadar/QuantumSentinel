@@ -532,20 +532,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Benchmark comparison endpoint
+  // Benchmark comparison endpoint (using persistent training system)
   app.get("/api/predictions/benchmark/:model", async (req, res) => {
     try {
       const { model } = req.params;
-      
-      if (!enhancedHybridSystem) {
-        return res.status(503).json({ error: "Enhanced hybrid system not available" });
-      }
 
       if (model !== 'pytorch' && model !== 'ollama' && model !== 'hybrid') {
         return res.status(400).json({ error: "Invalid model type. Use 'pytorch', 'ollama', or 'hybrid'" });
       }
 
-      const metrics = enhancedHybridSystem.getModelMetrics(model as 'pytorch' | 'ollama');
+      // Get metrics from persistent training system instead
+      const allMetrics = persistentTraining.getModelMetrics();
+      const metrics = model === 'pytorch' ? allMetrics.pytorch : allMetrics.ollama;
+      
+      console.log(`Getting metrics for ${model}:`, JSON.stringify(metrics));
+      
       const comparison = benchmarkService.compareModel(model as 'pytorch' | 'ollama', metrics);
       
       res.json(comparison);
