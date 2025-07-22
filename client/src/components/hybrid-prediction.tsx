@@ -446,8 +446,20 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
                     <div className="text-green-600">Accuracy</div>
                   </div>
                   <div className="text-center">
-                    <div className="font-bold text-green-700">{(ollamaMetrics.confidence || 0).toFixed(1)}%</div>
+                    <div className="font-bold text-green-700">{(ollamaMetrics.confidence || ollamaMetrics.accuracy || 0).toFixed(1)}%</div>
                     <div className="text-green-600">Confidence</div>
+                  </div>
+                </div>
+                <div className="mt-2 pt-2 border-t border-green-200">
+                  <div className="flex justify-between text-xs text-green-600">
+                    <span>Training Data:</span>
+                    <span className="font-medium">
+                      {(ollamaMetrics.trainingDataCount || 0).toLocaleString()} records
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs text-green-600">
+                    <span>Sessions:</span>
+                    <span className="font-medium">{ollamaMetrics.trainingSessions || 0}</span>
                   </div>
                 </div>
               </div>

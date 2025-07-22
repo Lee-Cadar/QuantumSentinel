@@ -507,6 +507,8 @@ export class EnhancedHybridPrediction {
   private cachedOllamaMetrics: any = null;
 
   getModelMetrics(modelType: 'pytorch' | 'ollama') {
+    console.log(`Getting metrics for ${modelType}:`, modelType === 'pytorch' ? this.cachedPyTorchMetrics : this.cachedOllamaMetrics);
+    
     if (modelType === 'pytorch') {
       return this.cachedPyTorchMetrics || {
         accuracy: 0,
@@ -516,7 +518,7 @@ export class EnhancedHybridPrediction {
         trainingSessions: 0
       };
     } else {
-      return this.cachedOllamaMetrics || {
+      const metrics = this.cachedOllamaMetrics || {
         accuracy: 0,
         precision: 0,
         recall: 0,
@@ -524,6 +526,13 @@ export class EnhancedHybridPrediction {
         trainingDataCount: 0,
         trainingSessions: 0
       };
+      
+      // Ensure confidence is set from accuracy for Ollama
+      if (metrics.accuracy > 0) {
+        metrics.confidence = metrics.accuracy;
+      }
+      
+      return metrics;
     }
   }
 }

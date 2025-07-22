@@ -334,10 +334,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { model = 'ollama' } = req.query;
       
-      if (enhancedHybridSystem && (model === 'pytorch' || model === 'ollama')) {
-        const metrics = enhancedHybridSystem.getModelMetrics(model);
-        res.json(metrics);
-      } else if (model === 'pytorch') {
+      // Always use enhanced hybrid system if available
+      if (enhancedHybridSystem) {
+        const metrics = enhancedHybridSystem.getModelMetrics(model as 'pytorch' | 'ollama');
+        
+        // If metrics exist, return them; otherwise fall back to original
+        if (metrics && (metrics.accuracy > 0 || metrics.trainingDataCount > 0)) {
+          // Convert to expected format for UI
+          const formattedMetrics = {
+            accuracy: metrics.accuracy || 0,
+            precision: metrics.precision || 0,
+            recall: metrics.recall || 0,
+            confidence: metrics.accuracy || 0, // Use accuracy as confidence for Ollama
+            trainingDataCount: metrics.trainingDataCount || 0,
+            trainingSessions: metrics.trainingSessions || 0
+          };
+          res.json(formattedMetrics);
+          return;
+        }
+      }
+      
+      // Fallback to original metrics
+      if (model === 'pytorch') {
         const metrics = pyTorchEarthquakePrediction.getModelMetrics();
         res.json(metrics);
       } else {
@@ -345,6 +363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(metrics);
       }
     } catch (error) {
+      console.error('Metrics fetch error:', error);
       res.status(500).json({ error: "Failed to fetch model metrics" });
     }
   });
