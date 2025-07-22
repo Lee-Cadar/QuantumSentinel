@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import NavigationHeader from "@/components/navigation-header";
 import { HybridPrediction } from "@/components/hybrid-prediction";
 import { BenchmarkComparison } from "@/components/benchmark-comparison";
+import { TemporalValidation } from "@/components/temporal-validation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Brain, Activity, Zap } from "lucide-react";
@@ -89,6 +90,11 @@ export default function Dashboard() {
         {/* Benchmark Comparison */}
         <div className="mb-8">
           <BenchmarkComparison modelType="pytorch" />
+        </div>
+
+        {/* Temporal Cross-Validation */}
+        <div className="mb-8">
+          <TemporalValidation modelType="pytorch" />
         </div>
       </main>
     </div>

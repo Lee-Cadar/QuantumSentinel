@@ -254,6 +254,26 @@ export const insertTrainingSessionSchema = createInsertSchema(trainingSessions).
   createdAt: true
 });
 
+// Temporal validation results schema
+export const validationResults = pgTable("validation_results", {
+  id: serial("id").primaryKey(),
+  modelType: text("model_type").notNull(), // 'pytorch', 'ollama', 'hybrid'
+  validationType: text("validation_type").notNull(), // 'temporal_cross_validation', 'real_time', 'benchmark'
+  trainingAccuracy: real("training_accuracy").default(0),
+  testingAccuracy: real("testing_accuracy").default(0),
+  scientificCredibility: real("scientific_credibility").default(0),
+  configData: jsonb("config_data"), // Validation configuration
+  resultsData: jsonb("results_data"), // Full validation results
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+export const insertValidationResultsSchema = createInsertSchema(validationResults).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
 export type EarthquakeData = typeof earthquakeData.$inferSelect;
 export type InsertEarthquakeData = z.infer<typeof insertEarthquakeDataSchema>;
 export type ModelMetrics = typeof modelMetrics.$inferSelect;
@@ -266,3 +286,5 @@ export type TrainingGoals = typeof trainingGoals.$inferSelect;
 export type InsertTrainingGoals = z.infer<typeof insertTrainingGoalsSchema>;
 export type TrainingSession = typeof trainingSessions.$inferSelect;
 export type InsertTrainingSession = z.infer<typeof insertTrainingSessionSchema>;
+export type ValidationResult = typeof validationResults.$inferSelect;
+export type InsertValidationResult = z.infer<typeof insertValidationResultsSchema>;

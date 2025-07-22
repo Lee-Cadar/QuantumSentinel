@@ -16,6 +16,7 @@ console.log('Enhanced hybrid prediction system initialized successfully');
 console.log('Persistent training manager initialized');
 import { disasterNewsService } from "./news-service";
 import { benchmarkService, type BenchmarkComparison } from './benchmark-comparison.js';
+import { temporalValidation } from './temporal-validation';
 import { z } from "zod";
 
 const routeOptimizationSchema = z.object({
@@ -660,6 +661,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('News refresh error:', error);
       res.status(500).json({ error: "Failed to refresh news articles" });
+    }
+  });
+
+  // Temporal validation endpoints
+  app.post("/api/temporal-validation/start/:modelType", async (req, res) => {
+    try {
+      const modelType = req.params.modelType as 'pytorch' | 'ollama';
+      if (!['pytorch', 'ollama'].includes(modelType)) {
+        return res.status(400).json({ error: "Invalid model type" });
+      }
+
+      console.log(`Starting temporal cross-validation for ${modelType} model...`);
+      const result = await temporalValidation.runFullTemporalValidation(modelType);
+      
+      res.json({
+        message: `Temporal validation completed for ${modelType} model`,
+        result: result,
+        scientificCredibility: result.scientificCredibility.overallCredibility
+      });
+    } catch (error) {
+      console.error('Temporal validation error:', error);
+      res.status(500).json({ error: "Failed to run temporal validation" });
+    }
+  });
+
+  app.get("/api/temporal-validation/results", async (req, res) => {
+    try {
+      const modelType = req.query.modelType as 'pytorch' | 'ollama' | undefined;
+      const results = await temporalValidation.getLatestValidationResults(modelType);
+      res.json(results);
+    } catch (error) {
+      console.error('Error fetching validation results:', error);
+      res.status(500).json({ error: "Failed to fetch validation results" });
+    }
+  });
+
+  app.get("/api/temporal-validation/results/:modelType", async (req, res) => {
+    try {
+      const modelType = req.params.modelType as 'pytorch' | 'ollama';
+      if (!['pytorch', 'ollama'].includes(modelType)) {
+        return res.status(400).json({ error: "Invalid model type" });
+      }
+
+      const results = await temporalValidation.getLatestValidationResults(modelType);
+      res.json(results);
+    } catch (error) {
+      console.error('Error fetching validation results:', error);
+      res.status(500).json({ error: "Failed to fetch validation results" });
     }
   });
 
