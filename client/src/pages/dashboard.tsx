@@ -1,14 +1,20 @@
+import { useQuery } from "@tanstack/react-query";
 import NavigationHeader from "@/components/navigation-header";
 import AlertBanner from "@/components/alert-banner";
 import MetricsOverview from "@/components/metrics-overview";
 import DisasterHeatmap from "@/components/disaster-heatmap";
 import ActiveAlerts from "@/components/active-alerts";
 import PredictionPanel from "@/components/prediction-panel";
+import EarthquakePredictionMap from "@/components/earthquake-prediction-map";
 import IncidentReporting from "@/components/incident-reporting";
 import RouteOptimization from "@/components/route-optimization";
 import RecentActivity from "@/components/recent-activity";
 
 export default function Dashboard() {
+  const { data: predictions = [] } = useQuery({
+    queryKey: ["/api/predictions"],
+  });
+
   return (
     <div className="min-h-screen bg-slate-50">
       <NavigationHeader />
@@ -24,12 +30,21 @@ export default function Dashboard() {
           <ActiveAlerts />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
           <PredictionPanel />
-          <IncidentReporting />
+          <EarthquakePredictionMap 
+            predictions={predictions}
+            onLocationSelect={(location) => {
+              console.log('Selected earthquake location:', location);
+            }}
+          />
         </div>
 
-        <RouteOptimization />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <IncidentReporting />
+          <RouteOptimization />
+        </div>
+
         <RecentActivity />
       </main>
     </div>
