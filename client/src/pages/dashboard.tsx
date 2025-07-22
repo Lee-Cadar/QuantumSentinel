@@ -24,14 +24,14 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <MetricsOverview />
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2">
             <DisasterHeatmap />
           </div>
           <ActiveAlerts />
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
           <PredictionPanel />
           <EarthquakeMap 
             earthquakes={[]}
@@ -43,7 +43,7 @@ export default function Dashboard() {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
             <IncidentReporting />
             <RouteOptimization />
@@ -51,7 +51,9 @@ export default function Dashboard() {
           <NewsWidget />
         </div>
 
-        <RecentActivity />
+        <div className="mt-6">
+          <RecentActivity />
+        </div>
       </main>
     </div>
   );
