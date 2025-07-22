@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { MapPin, Brain, Activity, Database, AlertTriangle, TrendingUp, Eye, EyeOff, Calendar, Target } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import RealTimeEarthquakeMap from "./real-time-earthquake-map";
 
 interface PredictionLocation {
   name: string;
@@ -245,19 +246,7 @@ export function EnhancedPredictionReport({ prediction, onHide }: EnhancedPredict
 
                 {showMap && (
                   <div className="space-y-4">
-                    <div className="h-80 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-                      <div className="text-center space-y-2">
-                        <MapPin className="h-12 w-12 text-red-500 mx-auto" />
-                        <div className="font-semibold">Predicted Epicenter</div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          {prediction.analysis.predictedLocation?.lat?.toFixed(4) || '0.0000'}°, 
-                          {prediction.analysis.predictedLocation?.lng?.toFixed(4) || '0.0000'}°
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Interactive map integration coming soon
-                        </div>
-                      </div>
-                    </div>
+                    <RealTimeEarthquakeMap prediction={prediction} />
 
                     {/* Closest Recorded Event */}
                     {prediction.dataMetrics.closestRecordedEvent && (
