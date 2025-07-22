@@ -37,6 +37,8 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
   const [trainingProgress, setTrainingProgress] = useState<TrainingProgressState>({});
   const [latestPrediction, setLatestPrediction] = useState<any>(null);
   const [showPredictionReport, setShowPredictionReport] = useState(false);
+  const [sentinelSessionCount, setSentinelSessionCount] = useState(1);
+  const [ollamaSessionCount, setOllamaSessionCount] = useState(1);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -176,7 +178,7 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
   }, [trainingProgress]);
 
   const trainModelMutation = useMutation({
-    mutationFn: async (model: 'pytorch' | 'ollama') => {
+    mutationFn: async ({ model, sessions }: { model: 'pytorch' | 'ollama', sessions: number }) => {
       // Start progress tracking
       setTrainingProgress(prev => ({
         ...prev,
@@ -193,12 +195,12 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
       const response = await fetch('/api/predictions/train', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model })
+        body: JSON.stringify({ model, sessions })
       });
       if (!response.ok) throw new Error('Failed to train model');
       return response.json();
     },
-    onSuccess: (result, model) => {
+    onSuccess: (result, { model, sessions }) => {
       // Update with final results
       setTrainingProgress(prev => ({
         ...prev,
@@ -206,18 +208,18 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
           progress: 100, 
           eta: 'Complete!', 
           status: 'completed', 
-          currentStep: `Training completed - Final accuracy: ${result.finalAccuracy?.toFixed(1) || 'N/A'}%`,
+          currentStep: `Training completed - ${sessions} session${sessions > 1 ? 's' : ''} - Final accuracy: ${result.finalAccuracy?.toFixed(1) || 'N/A'}%`,
           dataPointsUsed: result.dataPoints || 0,
           totalDataPoints: result.dataPoints || 0
         }
       }));
       toast({
         title: "Model Training Complete",
-        description: `${model.toUpperCase()} model trained with ${result.dataPoints?.toLocaleString() || 0} data points`
+        description: `${model.toUpperCase()} model trained for ${sessions} session${sessions > 1 ? 's' : ''} with ${result.dataPoints?.toLocaleString() || 0} data points`
       });
       queryClient.invalidateQueries({ queryKey: ['/api/predictions/model-metrics'] });
     },
-    onError: (error, model) => {
+    onError: (error, { model }) => {
       setTrainingProgress(prev => ({
         ...prev,
         [model]: { 
@@ -245,8 +247,8 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
     });
   };
 
-  const handleTrainModel = (model: 'pytorch' | 'ollama') => {
-    trainModelMutation.mutate(model);
+  const handleTrainModel = (model: 'pytorch' | 'ollama', sessions: number = 1) => {
+    trainModelMutation.mutate({ model, sessions });
   };
 
   const getPredictionTypeDescription = () => {
@@ -426,14 +428,43 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
               </div>
             )}
 
+            {/* Session Count Selector for Sentinel Model */}
+            <div className="space-y-2">
+              <Label htmlFor="sentinel-sessions" className="text-sm">Training Sessions</Label>
+              <Select 
+                value={sentinelSessionCount.toString()} 
+                onValueChange={(value) => setSentinelSessionCount(parseInt(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select sessions" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                    <SelectItem key={num} value={num.toString()}>
+                      {num} Session{num > 1 ? 's' : ''}
+                      {num === 1 && ' (Quick)'}
+                      {num === 5 && ' (Recommended)'}
+                      {num === 10 && ' (Maximum)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-500">
+                More sessions = better accuracy but longer training time
+              </p>
+            </div>
+
             <Button 
-              onClick={() => handleTrainModel('pytorch')} 
+              onClick={() => handleTrainModel('pytorch', sentinelSessionCount)} 
               disabled={trainModelMutation.isPending || trainingProgress.pytorch?.status === 'training'}
               className="w-full"
               variant="outline"
             >
               <Cpu className="h-4 w-4 mr-2" />
-              {trainingProgress.pytorch?.status === 'training' ? 'Training...' : 'Train Sentinel Model'}
+              {trainingProgress.pytorch?.status === 'training' 
+                ? `Training Session ${Math.ceil((trainingProgress.pytorch.progress || 0) / (100 / sentinelSessionCount))} of ${sentinelSessionCount}...` 
+                : `Train Sentinel Model (${sentinelSessionCount} Session${sentinelSessionCount > 1 ? 's' : ''})`
+              }
             </Button>
           </CardContent>
         </Card>
@@ -502,14 +533,43 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
               </div>
             )}
 
+            {/* Session Count Selector for Ollama Model */}
+            <div className="space-y-2">
+              <Label htmlFor="ollama-sessions" className="text-sm">Training Sessions</Label>
+              <Select 
+                value={ollamaSessionCount.toString()} 
+                onValueChange={(value) => setOllamaSessionCount(parseInt(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select sessions" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                    <SelectItem key={num} value={num.toString()}>
+                      {num} Session{num > 1 ? 's' : ''}
+                      {num === 1 && ' (Quick)'}
+                      {num === 5 && ' (Recommended)'}
+                      {num === 10 && ' (Maximum)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-500">
+                More sessions = better accuracy but longer training time
+              </p>
+            </div>
+
             <Button 
-              onClick={() => handleTrainModel('ollama')} 
+              onClick={() => handleTrainModel('ollama', ollamaSessionCount)} 
               disabled={trainModelMutation.isPending || trainingProgress.ollama?.status === 'training'}
               className="w-full"
               variant="outline"
             >
               <Brain className="h-4 w-4 mr-2" />
-              {trainingProgress.ollama?.status === 'training' ? 'Training...' : 'Train Ollama Model'}
+              {trainingProgress.ollama?.status === 'training' 
+                ? `Training Session ${Math.ceil((trainingProgress.ollama.progress || 0) / (100 / ollamaSessionCount))} of ${ollamaSessionCount}...` 
+                : `Train Ollama Model (${ollamaSessionCount} Session${ollamaSessionCount > 1 ? 's' : ''})`
+              }
             </Button>
           </CardContent>
         </Card>

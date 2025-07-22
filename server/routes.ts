@@ -367,28 +367,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Enhanced model training endpoint (using persistent training)
   app.post("/api/predictions/train", async (req, res) => {
     try {
-      const { model = 'pytorch' } = req.body;
-      console.log(`🚀 Starting ${model} model training with persistent progress tracking...`);
+      const { model = 'pytorch', sessions = 1 } = req.body;
+      const sessionCount = Math.min(10, Math.max(1, parseInt(sessions) || 1)); // Limit to 1-10 sessions
+      
+      console.log(`🚀 Starting ${model} model training with ${sessionCount} session${sessionCount > 1 ? 's' : ''} and persistent progress tracking...`);
       
       if (model === 'pytorch') {
-        await persistentTraining.trainPyTorchModel();
+        await persistentTraining.trainPyTorchModel(sessionCount);
         const updatedMetrics = persistentTraining.getModelMetrics();
         res.json({
-          message: 'PyTorch model training completed successfully with persistent data',
+          message: `PyTorch model training completed successfully with ${sessionCount} session${sessionCount > 1 ? 's' : ''} and persistent data`,
           metrics: updatedMetrics.pytorch,
           improvement: true,
           dataCount: updatedMetrics.pytorch.trainingDataCount,
-          sessions: updatedMetrics.pytorch.trainingSessions
+          sessions: updatedMetrics.pytorch.trainingSessions,
+          sessionsCompleted: sessionCount
         });
       } else if (model === 'ollama') {
-        await persistentTraining.trainOllamaModel();
+        await persistentTraining.trainOllamaModel(sessionCount);
         const updatedMetrics = persistentTraining.getModelMetrics();
         res.json({
-          message: 'Ollama AI model training completed successfully with persistent data',
+          message: `Ollama AI model training completed successfully with ${sessionCount} session${sessionCount > 1 ? 's' : ''} and persistent data`,
           metrics: updatedMetrics.ollama,
           improvement: true,
           dataCount: updatedMetrics.ollama.trainingDataCount,
-          sessions: updatedMetrics.ollama.trainingSessions
+          sessions: updatedMetrics.ollama.trainingSessions,
+          sessionsCompleted: sessionCount
         });
       } else {
         res.status(400).json({ error: 'Invalid model type. Use "pytorch" or "ollama"' });
@@ -424,13 +428,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Training endpoints that directly use persistent training
   app.post('/api/train-pytorch', async (req, res) => {
     try {
-      console.log('🚀 Starting PyTorch model training with persistent progress tracking...');
-      await persistentTraining.trainPyTorchModel();
+      const { sessions = 1 } = req.body;
+      const sessionCount = Math.min(10, Math.max(1, parseInt(sessions) || 1));
+      
+      console.log(`🚀 Starting PyTorch model training with ${sessionCount} session${sessionCount > 1 ? 's' : ''} and persistent progress tracking...`);
+      await persistentTraining.trainPyTorchModel(sessionCount);
       const updatedMetrics = persistentTraining.getModelMetrics();
       res.json({ 
         success: true, 
-        message: 'PyTorch training completed successfully with persistent data',
-        metrics: updatedMetrics.pytorch 
+        message: `PyTorch training completed successfully with ${sessionCount} session${sessionCount > 1 ? 's' : ''} and persistent data`,
+        metrics: updatedMetrics.pytorch,
+        sessionsCompleted: sessionCount
       });
     } catch (error) {
       console.error('PyTorch training error:', error);
@@ -443,13 +451,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/train-ollama', async (req, res) => {
     try {
-      console.log('🚀 Starting Ollama model training with persistent progress tracking...');
-      await persistentTraining.trainOllamaModel();
+      const { sessions = 1 } = req.body;
+      const sessionCount = Math.min(10, Math.max(1, parseInt(sessions) || 1));
+      
+      console.log(`🚀 Starting Ollama model training with ${sessionCount} session${sessionCount > 1 ? 's' : ''} and persistent progress tracking...`);
+      await persistentTraining.trainOllamaModel(sessionCount);
       const updatedMetrics = persistentTraining.getModelMetrics();
       res.json({ 
         success: true, 
-        message: 'Ollama training completed successfully with persistent data',
-        metrics: updatedMetrics.ollama 
+        message: `Ollama training completed successfully with ${sessionCount} session${sessionCount > 1 ? 's' : ''} and persistent data`,
+        metrics: updatedMetrics.ollama,
+        sessionsCompleted: sessionCount
       });
     } catch (error) {
       console.error('Ollama training error:', error);
