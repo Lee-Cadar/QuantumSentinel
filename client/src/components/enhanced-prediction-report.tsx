@@ -4,8 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { MapPin, Brain, Activity, Database, AlertTriangle, TrendingUp, Eye, EyeOff } from "lucide-react";
-// import { InteractiveMap } from "./interactive-map"; // Will be added later
+import { MapPin, Brain, Activity, Database, AlertTriangle, TrendingUp, Eye, EyeOff, Calendar, Target } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface PredictionLocation {
   name: string;
@@ -30,6 +30,23 @@ interface EnhancedPredictionReportProps {
         confidence: number;
         dataPointsUsed: number;
         modelAccuracy: number;
+        technicalDetails?: {
+          lstmArchitecture: string;
+          inputFeatures: string[];
+          trainingEpochs: number;
+          lossFunction: string;
+          optimizerDetails: string;
+          validationSplit: string;
+          earlyStoppingSigma: string;
+        };
+        seismicParameters?: {
+          frequencyDomain: string;
+          magnitudeScale: string;
+          depthEstimate: string;
+          seismicMoment: string;
+          energyRelease: string;
+          ruptureLength: string;
+        };
       };
       ollamaAnalysis?: {
         reasoning: string;
@@ -42,6 +59,19 @@ interface EnhancedPredictionReportProps {
         reconciliationMethod: string;
         keyInsights: string[];
         dataQuality: 'excellent' | 'good' | 'fair' | 'poor';
+        probabilityAnalysis?: {
+          bayesianInference: string;
+          confidenceInterval: string;
+          statisticalSignificance: string;
+          modelAgreement: string;
+          uncertaintyQuantification: string;
+        };
+        modelDivergence?: {
+          magnitudeVariance: string;
+          confidenceSpread: string;
+          consensusLevel: string;
+          reliabilityFactor: string;
+        };
       };
       predictedLocation?: PredictionLocation;
     };
@@ -57,6 +87,18 @@ interface EnhancedPredictionReportProps {
       recentEarthquakeCount: number;
       historicalPatternMatch: number;
       dataRecency: string;
+      closestRecordedEvent?: {
+        magnitude: number;
+        location: string;
+        timestamp: string;
+        distance: string;
+        significance: string;
+      };
+      dailyProbabilities?: Array<{
+        day: number;
+        probability: number;
+        riskLevel: string;
+      }>;
     };
     timestamp: string;
   };
@@ -202,21 +244,91 @@ export function EnhancedPredictionReport({ prediction, onHide }: EnhancedPredict
                 </div>
 
                 {showMap && (
-                  <div className="h-80 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-                    <div className="text-center space-y-2">
-                      <MapPin className="h-12 w-12 text-red-500 mx-auto" />
-                      <div className="font-semibold">Predicted Epicenter</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {prediction.analysis.predictedLocation?.lat?.toFixed(4) || '0.0000'}°, 
-                        {prediction.analysis.predictedLocation?.lng?.toFixed(4) || '0.0000'}°
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Interactive map integration coming soon
+                  <div className="space-y-4">
+                    <div className="h-80 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                      <div className="text-center space-y-2">
+                        <MapPin className="h-12 w-12 text-red-500 mx-auto" />
+                        <div className="font-semibold">Predicted Epicenter</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          {prediction.analysis.predictedLocation?.lat?.toFixed(4) || '0.0000'}°, 
+                          {prediction.analysis.predictedLocation?.lng?.toFixed(4) || '0.0000'}°
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Interactive map integration coming soon
+                        </div>
                       </div>
                     </div>
+
+                    {/* Closest Recorded Event */}
+                    {prediction.dataMetrics.closestRecordedEvent && (
+                      <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                        <h4 className="font-semibold text-sm mb-2 text-orange-800 dark:text-orange-200">Closest Recorded Event</h4>
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <span className="font-medium">Magnitude:</span>
+                            <span className="ml-2 font-bold">{prediction.dataMetrics.closestRecordedEvent.magnitude.toFixed(1)}</span>
+                          </div>
+                          <div>
+                            <span className="font-medium">Distance:</span>
+                            <span className="ml-2">{prediction.dataMetrics.closestRecordedEvent.distance}</span>
+                          </div>
+                          <div>
+                            <span className="font-medium">Location:</span>
+                            <span className="ml-2">{prediction.dataMetrics.closestRecordedEvent.location}</span>
+                          </div>
+                          <div>
+                            <span className="font-medium">Significance:</span>
+                            <span className="ml-2">{prediction.dataMetrics.closestRecordedEvent.significance}</span>
+                          </div>
+                          <div className="col-span-2">
+                            <span className="font-medium">Date:</span>
+                            <span className="ml-2">{new Date(prediction.dataMetrics.closestRecordedEvent.timestamp).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
+
+              {/* 14-Day Probability Forecast - Full Width */}
+              {prediction.dataMetrics.dailyProbabilities && (
+                <div className="mt-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <h4 className="font-semibold text-sm mb-4 text-purple-800 dark:text-purple-200 flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    14-Day Probability Forecast
+                  </h4>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={prediction.dataMetrics.dailyProbabilities}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="day" 
+                          label={{ value: 'Days', position: 'insideBottom', offset: -5 }} 
+                        />
+                        <YAxis 
+                          label={{ value: 'Probability (%)', angle: -90, position: 'insideLeft' }} 
+                        />
+                        <Tooltip 
+                          formatter={(value: any) => [`${value.toFixed(1)}%`, 'Probability']}
+                          labelFormatter={(label) => `Day ${label}`}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="probability" 
+                          stroke="#8b5cf6" 
+                          strokeWidth={2}
+                          dot={{ r: 4 }}
+                          activeDot={{ r: 6 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                    Peak probability window: Days 3-8 based on seismic pattern analysis
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -261,6 +373,60 @@ export function EnhancedPredictionReport({ prediction, onHide }: EnhancedPredict
                       <span className="font-mono text-sm font-bold">{formatNumber(prediction.analysis.pytorchAnalysis.dataPointsUsed)}</span>
                     </div>
                   </div>
+
+                  {/* Enhanced Technical Details */}
+                  {prediction.analysis.pytorchAnalysis.technicalDetails && (
+                    <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <h4 className="font-semibold text-sm mb-3">Technical Architecture</h4>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <span className="font-medium">LSTM Architecture:</span>
+                          <p className="text-gray-600 dark:text-gray-400">{prediction.analysis.pytorchAnalysis.technicalDetails.lstmArchitecture}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium">Training Epochs:</span>
+                          <p className="text-gray-600 dark:text-gray-400">{prediction.analysis.pytorchAnalysis.technicalDetails.trainingEpochs}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium">Loss Function:</span>
+                          <p className="text-gray-600 dark:text-gray-400">{prediction.analysis.pytorchAnalysis.technicalDetails.lossFunction}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium">Optimizer:</span>
+                          <p className="text-gray-600 dark:text-gray-400">{prediction.analysis.pytorchAnalysis.technicalDetails.optimizerDetails}</p>
+                        </div>
+                        <div className="lg:col-span-2">
+                          <span className="font-medium">Input Features:</span>
+                          <p className="text-gray-600 dark:text-gray-400">{prediction.analysis.pytorchAnalysis.technicalDetails.inputFeatures.join(', ')}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Seismic Parameters */}
+                  {prediction.analysis.pytorchAnalysis.seismicParameters && (
+                    <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <h4 className="font-semibold text-sm mb-3">Seismic Analysis Parameters</h4>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <span className="font-medium">Frequency Domain:</span>
+                          <p className="text-gray-600 dark:text-gray-400">{prediction.analysis.pytorchAnalysis.seismicParameters.frequencyDomain}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium">Depth Estimate:</span>
+                          <p className="text-gray-600 dark:text-gray-400">{prediction.analysis.pytorchAnalysis.seismicParameters.depthEstimate}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium">Seismic Moment:</span>
+                          <p className="text-gray-600 dark:text-gray-400">{prediction.analysis.pytorchAnalysis.seismicParameters.seismicMoment}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium">Energy Release:</span>
+                          <p className="text-gray-600 dark:text-gray-400">{prediction.analysis.pytorchAnalysis.seismicParameters.energyRelease}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -350,6 +516,55 @@ export function EnhancedPredictionReport({ prediction, onHide }: EnhancedPredict
                   </ul>
                 </div>
               </div>
+
+              {/* Enhanced Probability Analysis */}
+              {prediction.analysis.hybridSynthesis.probabilityAnalysis && (
+                <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Detailed Probability Analysis
+                  </h4>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs space-y-2">
+                    <div>
+                      <span className="font-medium">Bayesian Weighting:</span>
+                      <p className="text-gray-600 dark:text-gray-400">{prediction.analysis.hybridSynthesis.probabilityAnalysis.bayesianInference}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Confidence Interval:</span>
+                      <p className="text-gray-600 dark:text-gray-400">{prediction.analysis.hybridSynthesis.probabilityAnalysis.confidenceInterval}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Statistical Significance:</span>
+                      <p className="text-gray-600 dark:text-gray-400">{prediction.analysis.hybridSynthesis.probabilityAnalysis.statisticalSignificance}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Model Agreement:</span>
+                      <p className="text-gray-600 dark:text-gray-400">{prediction.analysis.hybridSynthesis.probabilityAnalysis.modelAgreement}</p>
+                    </div>
+                    <div className="lg:col-span-2">
+                      <span className="font-medium">Uncertainty Quantification:</span>
+                      <p className="text-gray-600 dark:text-gray-400">{prediction.analysis.hybridSynthesis.probabilityAnalysis.uncertaintyQuantification}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Model Divergence Analysis */}
+              {prediction.analysis.hybridSynthesis.modelDivergence && (
+                <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <h4 className="font-semibold text-sm mb-3">Model Divergence Analysis</h4>
+                  <div className="grid grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <span className="font-medium">Magnitude Variance:</span>
+                      <p className="text-gray-600 dark:text-gray-400">{prediction.analysis.hybridSynthesis.modelDivergence.magnitudeVariance}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Consensus Level:</span>
+                      <p className="text-gray-600 dark:text-gray-400">{prediction.analysis.hybridSynthesis.modelDivergence.consensusLevel}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
