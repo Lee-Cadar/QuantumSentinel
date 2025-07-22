@@ -17,6 +17,8 @@ interface HybridPredictionReport {
       confidence: number;
       dataPointsUsed: number;
       modelAccuracy: number;
+      technicalDetails?: any;
+      seismicParameters?: any;
     };
     ollamaAnalysis?: {
       reasoning: string;
@@ -29,7 +31,10 @@ interface HybridPredictionReport {
       reconciliationMethod: string;
       keyInsights: string[];
       dataQuality: 'excellent' | 'good' | 'fair' | 'poor';
+      probabilityAnalysis?: any;
+      modelDivergence?: any;
     };
+    predictedLocation?: any;
   };
   riskAssessment: {
     immediateRisk: number; // 0-100
@@ -43,6 +48,8 @@ interface HybridPredictionReport {
     recentEarthquakeCount: number;
     historicalPatternMatch: number;
     dataRecency: string;
+    closestRecordedEvent?: any;
+    dailyProbabilities?: any;
   };
   timestamp: string;
 }
@@ -151,7 +158,7 @@ export class EnhancedHybridPrediction {
           probabilityAnalysis: this.generateProbabilityAnalysis(hybridSynthesis),
           modelDivergence: this.calculateModelDivergence(pytorchResult, ollamaResult)
         },
-        predictedLocation: this.generatePredictedLocation(region, hybridSynthesis.magnitude)
+        predictedLocation: this.generatePredictedLocation(region)
       },
       riskAssessment: this.generateRiskAssessment(hybridSynthesis, recentEarthquakes),
       dataMetrics: {
@@ -159,7 +166,7 @@ export class EnhancedHybridPrediction {
         recentEarthquakeCount: pytorchResult.dataPointsUsed || (await this.getPyTorchMetrics()).trainingDataCount || 2320060, // Show actual PyTorch training dataset count
         historicalPatternMatch: this.calculatePatternMatch(recentEarthquakes),
         dataRecency: this.calculateDataRecency(recentEarthquakes),
-        closestRecordedEvent: await this.findClosestRecordedEvent(hybridSynthesis.location),
+        closestRecordedEvent: await this.findClosestRecordedEvent(region || 'Global'),
         dailyProbabilities: this.generateDailyProbabilities()
       },
       timestamp: new Date().toISOString()
@@ -507,42 +514,7 @@ export class EnhancedHybridPrediction {
     return this.cachedOllamaMetrics;
   }
 
-  private generatePredictedLocation(region?: string, magnitude?: number) {
-    // Generate realistic seismic zones based on major fault lines
-    const seismicZones = [
-      { region: 'California', lat: 37.7749, lng: -122.4194, name: 'San Andreas Fault' },
-      { region: 'Japan', lat: 35.6762, lng: 139.6503, name: 'Ring of Fire - Tokyo' },
-      { region: 'Turkey', lat: 39.9334, lng: 32.8597, name: 'North Anatolian Fault' },
-      { region: 'Chile', lat: -33.4489, lng: -70.6693, name: 'Pacific Ring of Fire' },
-      { region: 'Indonesia', lat: -6.2088, lng: 106.8456, name: 'Ring of Fire - Java' },
-      { region: 'Greece', lat: 37.9755, lng: 23.7348, name: 'Hellenic Trench' },
-      { region: 'Nepal', lat: 27.7172, lng: 85.3240, name: 'Himalayan Front' },
-      { region: 'Italy', lat: 41.9028, lng: 12.4964, name: 'Apennine Mountains' },
-      { region: 'Mexico', lat: 19.4326, lng: -99.1332, name: 'Trans-Mexican Volcanic Belt' },
-      { region: 'Iran', lat: 35.6892, lng: 51.3890, name: 'Zagros Mountains' }
-    ];
 
-    // Select appropriate zone based on magnitude and region
-    const targetRegion = region || 'Global';
-    let selectedZone = seismicZones.find(zone => 
-      zone.region.toLowerCase().includes(targetRegion.toLowerCase())
-    ) || seismicZones[Math.floor(Math.random() * seismicZones.length)];
-
-    // Add some randomness for realism
-    const latOffset = (Math.random() - 0.5) * 2; // ±1 degree
-    const lngOffset = (Math.random() - 0.5) * 2; // ±1 degree
-
-    return {
-      region: selectedZone.region,
-      coordinates: {
-        latitude: selectedZone.lat + latOffset,
-        longitude: selectedZone.lng + lngOffset
-      },
-      seismicZone: selectedZone.name,
-      predictedEpicenter: `${selectedZone.region} - ${selectedZone.name}`,
-      confidence: magnitude && magnitude > 6.0 ? 'High' : magnitude && magnitude > 5.0 ? 'Medium' : 'Moderate'
-    };
-  }
 
   private async storePrediction(report: HybridPredictionReport): Promise<any> {
     // Store prediction in database
@@ -552,6 +524,7 @@ export class EnhancedHybridPrediction {
         prediction: `Magnitude ${report.prediction.magnitude.toFixed(1)} earthquake predicted`,
         location: report.prediction.location,
         confidence: report.prediction.confidence,
+        timeframe: report.prediction.timeframe,
         timestamp: new Date(report.timestamp),
         modelType: report.modelType
       };
@@ -646,10 +619,6 @@ export class EnhancedHybridPrediction {
       riskFactors: riskFactors.slice(0, 2 + Math.floor(Math.random() * 3)),
       historicalContext: `Analysis incorporates ${actualDataCount.toLocaleString()} historical earthquake events from multiple seismic networks`
     };
-  }
-
-
-    }
   }
 
   getModelMetrics(modelType: 'pytorch' | 'ollama') {
