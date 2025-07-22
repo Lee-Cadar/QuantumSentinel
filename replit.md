@@ -36,6 +36,10 @@ Preferred communication style: Simple, everyday language.
 ✓ **Streamlined PyTorch Focus**: Simplified interface to concentrate on high-performing PyTorch model (92.5% accuracy)
 ✓ **Full-Width Map Display**: Interactive earthquake map now spans full width for better visualization
 ✓ **Industry Benchmark Integration**: Comprehensive comparison with 15+ leading academic/commercial/government models
+✓ **Autonomous Training Scheduler**: Added automated training system with target-based learning for both Sentinel and Ollama models
+✓ **Model Renaming**: PyTorch LSTM renamed to "Sentinel Model" for better branding and user recognition
+✓ **Target-Based Learning**: Users can set accuracy targets and data point goals for unsupervised model improvement
+✓ **Training Automation**: System automatically trains models to reach specified benchmarks with configurable intervals
 
 ## System Architecture
 

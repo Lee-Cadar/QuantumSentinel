@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Brain, Zap, TrendingUp, AlertTriangle, Clock, Activity, Cpu, Database, Trophy } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BenchmarkComparison } from "./benchmark-comparison";
+import AutoTrainingScheduler from "./auto-training-scheduler";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -341,8 +342,9 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
 
       {/* Main Interface with Tabs */}
       <Tabs defaultValue="training" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="training">Model Training</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="training">Manual Training</TabsTrigger>
+          <TabsTrigger value="scheduler">Auto Training</TabsTrigger>
           <TabsTrigger value="benchmark">Industry Benchmarks</TabsTrigger>
           <TabsTrigger value="predictions">Generate Predictions</TabsTrigger>
         </TabsList>
@@ -355,7 +357,7 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Zap className="h-5 w-5 text-blue-600" />
-              PyTorch LSTM Model
+              Sentinel Model (PyTorch LSTM)
             </CardTitle>
             <CardDescription>
               Deep learning model for precise earthquake magnitude predictions
@@ -431,7 +433,7 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
               variant="outline"
             >
               <Cpu className="h-4 w-4 mr-2" />
-              {trainingProgress.pytorch?.status === 'training' ? 'Training...' : 'Train PyTorch Model'}
+              {trainingProgress.pytorch?.status === 'training' ? 'Training...' : 'Train Sentinel Model'}
             </Button>
           </CardContent>
         </Card>
@@ -517,6 +519,17 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
 
         <TabsContent value="benchmark" className="space-y-6">
           <BenchmarkComparison modelType="pytorch" />
+        </TabsContent>
+
+        <TabsContent value="scheduler" className="space-y-6">
+          {/* Automated Training Scheduler */}
+          <AutoTrainingScheduler 
+            pytorchMetrics={pytorchMetrics}
+            ollamaMetrics={ollamaMetrics}
+            onSchedulerUpdate={(config: any) => {
+              console.log('Training scheduler updated:', config);
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="predictions" className="space-y-6">

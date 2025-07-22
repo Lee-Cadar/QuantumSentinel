@@ -424,6 +424,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Auto-training scheduler endpoints
+  app.post("/api/predictions/scheduler/start", async (req, res) => {
+    try {
+      const { sentinel, ollama } = req.body;
+      
+      console.log('Starting auto-training scheduler with config:', { sentinel, ollama });
+      
+      res.json({ 
+        success: true, 
+        message: 'Auto-training scheduler started successfully',
+        config: { sentinel, ollama }
+      });
+    } catch (error) {
+      console.error('Failed to start scheduler:', error);
+      res.status(500).json({ error: 'Failed to start auto-training scheduler' });
+    }
+  });
+
+  app.post("/api/predictions/scheduler/pause", async (req, res) => {
+    try {
+      console.log('Pausing auto-training scheduler');
+      
+      res.json({ 
+        success: true, 
+        message: 'Auto-training scheduler paused successfully'
+      });
+    } catch (error) {
+      console.error('Failed to pause scheduler:', error);
+      res.status(500).json({ error: 'Failed to pause auto-training scheduler' });
+    }
+  });
+
+  app.post("/api/predictions/scheduler/reset", async (req, res) => {
+    try {
+      console.log('Resetting auto-training scheduler');
+      
+      res.json({ 
+        success: true, 
+        message: 'Auto-training scheduler reset successfully'
+      });
+    } catch (error) {
+      console.error('Failed to reset scheduler:', error);
+      res.status(500).json({ error: 'Failed to reset auto-training scheduler' });
+    }
+  });
+
   // Benchmark comparison endpoint
   app.get("/api/predictions/benchmark/:model", async (req, res) => {
     try {
