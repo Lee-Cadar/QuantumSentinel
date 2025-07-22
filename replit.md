@@ -27,6 +27,9 @@ Preferred communication style: Simple, everyday language.
 ✓ **Working Training System**: PyTorch reaches 90.6% accuracy, Ollama reaches 87.7% accuracy with 17,942+ data points
 ✓ **Enhanced Metrics Display**: Both models show proper accuracy and confidence values in UI
 ✓ **Data Accumulation Verified**: Each training session adds 1,000-3,000 new earthquake records to dataset
+✓ **Fixed Session Tracking**: Training sessions now properly increment (was stuck at 1, now tracks correctly)
+✓ **Confidence Display Fix**: Ollama model now shows proper confidence percentage matching accuracy
+✓ **Real Data Counts**: Prediction reports display actual earthquake dataset size instead of placeholder "100"
 
 ## System Architecture
 

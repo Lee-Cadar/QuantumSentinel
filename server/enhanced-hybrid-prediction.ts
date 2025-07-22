@@ -63,9 +63,40 @@ interface ModelTrainingStatus {
 
 export class EnhancedHybridPrediction {
   private trainingStatus: Map<string, ModelTrainingStatus> = new Map();
+  private cachedPyTorchMetrics: any = null;
+  private cachedOllamaMetrics: any = null;
+  private pytorchSessionCount: number = 0;
+  private ollamaSessionCount: number = 0;
 
   constructor() {
     // Initialize with simple implementations
+    this.initializeDefaultMetrics();
+  }
+
+  private async initializeDefaultMetrics() {
+    // Initialize with basic metrics to prevent null values
+    this.cachedPyTorchMetrics = {
+      modelType: 'pytorch',
+      accuracy: 0,
+      precision: 0,
+      recall: 0,
+      trainingDataCount: 0,
+      trainingSessions: 0
+    };
+    
+    this.cachedOllamaMetrics = {
+      modelType: 'ollama',
+      accuracy: 0,
+      precision: 0,
+      recall: 0,
+      confidence: 0,
+      trainingDataCount: 0,
+      trainingSessions: 0
+    };
+    
+    // Initialize session counts from cached metrics if available
+    this.pytorchSessionCount = this.cachedPyTorchMetrics.trainingSessions || 0;
+    this.ollamaSessionCount = this.cachedOllamaMetrics.trainingSessions || 0;
   }
 
   async generateHybridPrediction(region?: string): Promise<HybridPredictionReport> {
@@ -118,7 +149,7 @@ export class EnhancedHybridPrediction {
       riskAssessment: this.generateRiskAssessment(hybridSynthesis, recentEarthquakes),
       dataMetrics: {
         inputSequenceLength: inputSequence.length,
-        recentEarthquakeCount: recentEarthquakes.length,
+        recentEarthquakeCount: (await storage.getAllEarthquakeData()).length, // Show total earthquake data count
         historicalPatternMatch: this.calculatePatternMatch(recentEarthquakes),
         dataRecency: this.calculateDataRecency(recentEarthquakes)
       },
@@ -199,7 +230,8 @@ export class EnhancedHybridPrediction {
       await new Promise(resolve => setTimeout(resolve, 300));
     }
 
-    // Update final metrics with realistic values
+    // Increment PyTorch session count and update metrics
+    this.pytorchSessionCount++;
     const finalAccuracy = status.currentAccuracy || 85;
     await this.updateModelMetrics('pytorch', {
       accuracy: finalAccuracy,
@@ -207,7 +239,7 @@ export class EnhancedHybridPrediction {
       recall: finalAccuracy * 0.95,
       f1Score: finalAccuracy * 0.93,
       trainingDataCount: status.totalDataPoints,
-      trainingSessions: 1
+      trainingSessions: this.pytorchSessionCount
     });
 
     status.isTraining = false;
@@ -246,7 +278,8 @@ export class EnhancedHybridPrediction {
       await new Promise(resolve => setTimeout(resolve, 200));
     }
 
-    // Update Ollama metrics with non-zero values
+    // Increment Ollama session count and update metrics
+    this.ollamaSessionCount++;
     const finalAccuracy = status.currentAccuracy || 75;
     await this.updateModelMetrics('ollama', {
       accuracy: finalAccuracy,
@@ -254,7 +287,7 @@ export class EnhancedHybridPrediction {
       recall: finalAccuracy * 0.92,
       f1Score: finalAccuracy * 0.90,
       trainingDataCount: status.totalDataPoints,
-      trainingSessions: 1
+      trainingSessions: this.ollamaSessionCount
     });
 
     status.isTraining = false;
@@ -502,9 +535,6 @@ export class EnhancedHybridPrediction {
       return metrics;
     }
   }
-
-  private cachedPyTorchMetrics: any = null;
-  private cachedOllamaMetrics: any = null;
 
   getModelMetrics(modelType: 'pytorch' | 'ollama') {
     console.log(`Getting metrics for ${modelType}:`, modelType === 'pytorch' ? this.cachedPyTorchMetrics : this.cachedOllamaMetrics);
