@@ -4,6 +4,7 @@ import { HybridPrediction } from "@/components/hybrid-prediction";
 import { BenchmarkComparison } from "@/components/benchmark-comparison";
 import { TemporalValidation } from "@/components/temporal-validation";
 import { RealTimeMonitor } from "@/components/real-time-monitor";
+import { WeeklyRetraining } from "@/components/weekly-retraining";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Brain, Activity, Zap } from "lucide-react";
@@ -101,6 +102,11 @@ export default function Dashboard() {
         {/* Real-Time Seismic Monitoring */}
         <div className="mb-8">
           <RealTimeMonitor />
+        </div>
+
+        {/* Weekly Model Retraining */}
+        <div className="mb-8">
+          <WeeklyRetraining />
         </div>
       </main>
     </div>

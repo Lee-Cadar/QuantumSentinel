@@ -814,6 +814,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Weekly retraining endpoints
+  app.get("/api/weekly-retraining/status", async (req, res) => {
+    try {
+      const { weeklyRetrainingSystem } = await import('./weekly-retraining');
+      const status = weeklyRetrainingSystem.getRetrainingStatus();
+      res.json(status);
+    } catch (error) {
+      console.error('Failed to get retraining status:', error);
+      res.status(500).json({ error: "Failed to get retraining status" });
+    }
+  });
+
+  app.get("/api/weekly-retraining/analysis", async (req, res) => {
+    try {
+      const { weeklyRetrainingSystem } = await import('./weekly-retraining');
+      const analysis = await weeklyRetrainingSystem.getWeeklyAnalysis();
+      res.json(analysis);
+    } catch (error) {
+      console.error('Failed to get weekly analysis:', error);
+      res.status(500).json({ error: "Failed to get weekly analysis" });
+    }
+  });
+
+  app.post("/api/weekly-retraining/trigger", async (req, res) => {
+    try {
+      const { weeklyRetrainingSystem } = await import('./weekly-retraining');
+      const { modelType } = req.body;
+      const result = await weeklyRetrainingSystem.triggerManualRetraining(modelType);
+      res.json(result);
+    } catch (error) {
+      console.error('Failed to trigger retraining:', error);
+      res.status(500).json({ error: "Failed to trigger retraining" });
+    }
+  });
+
+  app.post("/api/weekly-retraining/config", async (req, res) => {
+    try {
+      const { weeklyRetrainingSystem } = await import('./weekly-retraining');
+      const config = req.body;
+      weeklyRetrainingSystem.updateConfig(config);
+      res.json({ message: "Configuration updated successfully" });
+    } catch (error) {
+      console.error('Failed to update config:', error);
+      res.status(500).json({ error: "Failed to update configuration" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
