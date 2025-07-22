@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertDisasterSchema, insertIncidentSchema, insertPredictionSchema, insertAlertSchema } from "@shared/schema";
 import { ollamaEarthquakePredictionAI } from "./ollama-prediction";
+import { pyTorchEarthquakePrediction } from "./pytorch-prediction";
 import { disasterNewsService } from "./news-service";
 import { z } from "zod";
 
@@ -240,28 +241,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/predictions/generate", async (req, res) => {
     try {
-      const { disasterType, region } = req.body;
+      const { disasterType, region, predictionType = 'hybrid' } = req.body;
       
       if (disasterType === 'earthquake') {
-        // Use Ollama AI prediction for earthquakes
-        console.log('Generating Ollama AI earthquake prediction...');
-        const aiPrediction = await ollamaEarthquakePredictionAI.generatePrediction(region);
-        
-        const prediction = await storage.createPrediction({
-          disasterType: 'earthquake',
-          predictedIntensity: aiPrediction.predictedMagnitude,
-          confidence: aiPrediction.confidence,
-          timeframe: aiPrediction.timeframe,
-          location: aiPrediction.location
-        });
-        
-        res.json({
-          ...prediction,
-          reasoning: aiPrediction.reasoning,
-          riskLevel: aiPrediction.riskLevel,
-          keyFactors: aiPrediction.keyFactors,
-          recommendedActions: aiPrediction.recommendedActions
-        });
+        if (predictionType === 'hybrid') {
+          // Use hybrid PyTorch + Ollama prediction
+          console.log('Generating hybrid PyTorch + Ollama earthquake prediction...');
+          const hybridPrediction = await pyTorchEarthquakePrediction.generateHybridPrediction(region);
+          res.json(hybridPrediction);
+        } else if (predictionType === 'pytorch') {
+          // Use PyTorch-only prediction
+          console.log('Generating PyTorch-only earthquake prediction...');
+          const earthquakeData = await storage.getRecentEarthquakeData(10);
+          const sequenceData = earthquakeData.map(eq => eq.magnitude);
+          
+          if (sequenceData.length >= 10) {
+            const magnitudePrediction = await pyTorchEarthquakePrediction.predictMagnitude(sequenceData);
+            const prediction = await storage.createPrediction({
+              disasterType: 'earthquake',
+              predictedMagnitude: magnitudePrediction.expectedMagnitude,
+              confidence: magnitudePrediction.confidence * 100,
+              timeframe: '24-72 hours',
+              location: region || 'Regional area',
+              reasoning: `PyTorch LSTM prediction: ${magnitudePrediction.riskLevel} risk, magnitude ${magnitudePrediction.expectedMagnitude.toFixed(1)}`,
+              riskLevel: magnitudePrediction.riskLevel,
+              keyFactors: { model: 'PyTorch LSTM', confidence: magnitudePrediction.confidence },
+              recommendedActions: ['Monitor seismic activity', 'Review emergency plans']
+            });
+            res.json(prediction);
+          } else {
+            res.json({ message: "Insufficient earthquake sequence data for PyTorch prediction" });
+          }
+        } else {
+          // Use Ollama AI prediction for earthquakes (original)
+          console.log('Generating Ollama AI earthquake prediction...');
+          const aiPrediction = await ollamaEarthquakePredictionAI.generatePrediction(region);
+          
+          const prediction = await storage.createPrediction({
+            disasterType: 'earthquake',
+            predictedIntensity: aiPrediction.predictedMagnitude,
+            confidence: aiPrediction.confidence,
+            timeframe: aiPrediction.timeframe,
+            location: aiPrediction.location
+          });
+          
+          res.json({
+            ...prediction,
+            reasoning: aiPrediction.reasoning,
+            riskLevel: aiPrediction.riskLevel,
+            keyFactors: aiPrediction.keyFactors,
+            recommendedActions: aiPrediction.recommendedActions
+          });
+        }
       } else {
         // Fallback to statistical prediction for other disaster types
         const historicalData = await storage.getDisastersByType(disasterType);
@@ -290,8 +321,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Model metrics endpoint
   app.get("/api/predictions/model-metrics", async (req, res) => {
     try {
-      const metrics = ollamaEarthquakePredictionAI.getModelMetrics();
-      res.json(metrics);
+      const { model = 'ollama' } = req.query;
+      
+      if (model === 'pytorch') {
+        const metrics = pyTorchEarthquakePrediction.getModelMetrics();
+        res.json(metrics);
+      } else {
+        const metrics = ollamaEarthquakePredictionAI.getModelMetrics();
+        res.json(metrics);
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch model metrics" });
     }
@@ -300,18 +338,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Train model with new data
   app.post("/api/predictions/train", async (req, res) => {
     try {
-      console.log('Fetching new earthquake data for training...');
-      const earthquakeData = await ollamaEarthquakePredictionAI.fetchMultiSourceEarthquakeData();
+      const { model = 'ollama' } = req.body;
       
-      await ollamaEarthquakePredictionAI.storeTrainingData(earthquakeData);
-      await ollamaEarthquakePredictionAI.evaluatePredictionAccuracy(earthquakeData);
-      
-      res.json({ 
-        message: `Model trained with ${earthquakeData.length} earthquake records`,
-        dataPoints: earthquakeData.length,
-        sources: ['USGS', 'EMSC', 'Historical'],
-        metrics: ollamaEarthquakePredictionAI.getModelMetrics()
-      });
+      if (model === 'pytorch') {
+        console.log('Training PyTorch LSTM model...');
+        const trainingResults = await pyTorchEarthquakePrediction.trainModel();
+        res.json({
+          message: 'PyTorch model training completed',
+          metrics: trainingResults
+        });
+      } else {
+        console.log('Fetching new earthquake data for Ollama training...');
+        const earthquakeData = await ollamaEarthquakePredictionAI.fetchMultiSourceEarthquakeData();
+        
+        await ollamaEarthquakePredictionAI.storeTrainingData(earthquakeData);
+        await ollamaEarthquakePredictionAI.evaluatePredictionAccuracy(earthquakeData);
+        
+        res.json({ 
+          message: `Model trained with ${earthquakeData.length} earthquake records`,
+          dataPoints: earthquakeData.length,
+          sources: ['USGS', 'EMSC', 'Historical'],
+          metrics: ollamaEarthquakePredictionAI.getModelMetrics()
+        });
+      }
     } catch (error) {
       console.error('Model training error:', error);
       res.status(500).json({ error: "Failed to train model", details: error.message });

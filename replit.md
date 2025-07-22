@@ -17,6 +17,11 @@ Preferred communication style: Simple, everyday language.
 ✓ **Fluid Database Operations**: All CRUD operations working smoothly with proper error handling
 ✓ **Natural Disaster News Widget**: Integrated real-time news feed using ReliefWeb and GDACS APIs with 30+ articles
 ✓ **News Data Pipeline**: Automated news fetching, processing, and storage with disaster type classification
+✓ **Hybrid AI System**: Implemented Option 2 hybrid approach combining PyTorch LSTM with Ollama AI
+✓ **PyTorch Integration**: Added enhanced LSTM model with magnitude binning and dynamic class weighting
+✓ **Dual Prediction Engine**: Users can choose between hybrid, PyTorch-only, or Ollama-only predictions
+✓ **Advanced Training**: PyTorch model includes 95% recall target and post-2020 validation focus
+✓ **Model Comparison**: Real-time metrics tracking for both PyTorch and Ollama models with accuracy monitoring
 
 ## System Architecture
 

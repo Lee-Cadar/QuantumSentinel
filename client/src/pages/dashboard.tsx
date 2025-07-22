@@ -10,6 +10,7 @@ import IncidentReporting from "@/components/incident-reporting";
 import RouteOptimization from "@/components/route-optimization";
 import RecentActivity from "@/components/recent-activity";
 import { NewsWidget } from "@/components/news-widget";
+import { HybridPrediction } from "@/components/hybrid-prediction";
 
 export default function Dashboard() {
   const { data: predictions = [] } = useQuery({
@@ -49,6 +50,12 @@ export default function Dashboard() {
             <RouteOptimization />
           </div>
           <NewsWidget />
+        </div>
+
+        <div className="mb-6">
+          <HybridPrediction onPredictionGenerated={(prediction) => {
+            console.log('New prediction generated:', prediction);
+          }} />
         </div>
 
         <div className="mt-4">

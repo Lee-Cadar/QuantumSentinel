@@ -35,6 +35,7 @@ export interface IStorage {
   
   // Earthquake Data
   getEarthquakeData(): Promise<EarthquakeData[]>;
+  getRecentEarthquakeData(limit: number): Promise<EarthquakeData[]>;
   createEarthquakeData(data: InsertEarthquakeData): Promise<EarthquakeData>;
   bulkCreateEarthquakeData(data: InsertEarthquakeData[]): Promise<EarthquakeData[]>;
   
@@ -132,6 +133,14 @@ export class DatabaseStorage implements IStorage {
       .from(earthquakeData)
       .where(gte(earthquakeData.timestamp, thirtyDaysAgo))
       .orderBy(desc(earthquakeData.timestamp));
+  }
+
+  async getRecentEarthquakeData(limit: number): Promise<EarthquakeData[]> {
+    return await db
+      .select()
+      .from(earthquakeData)
+      .orderBy(desc(earthquakeData.timestamp))
+      .limit(limit);
   }
 
   async createEarthquakeData(data: InsertEarthquakeData): Promise<EarthquakeData> {
