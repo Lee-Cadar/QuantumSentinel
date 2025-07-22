@@ -669,20 +669,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const modelType = req.params.modelType as 'pytorch' | 'ollama';
       if (!['pytorch', 'ollama'].includes(modelType)) {
-        return res.status(400).json({ error: "Invalid model type" });
+        return res.status(400).json({ error: "Invalid model type. Must be 'pytorch' or 'ollama'." });
       }
 
       console.log(`Starting temporal cross-validation for ${modelType} model...`);
-      const result = await temporalValidation.runFullTemporalValidation(modelType);
       
-      res.json({
-        message: `Temporal validation completed for ${modelType} model`,
-        result: result,
-        scientificCredibility: result.scientificCredibility.overallCredibility
-      });
+      // Run validation immediately but catch errors properly
+      try {
+        const result = await temporalValidation.runFullTemporalValidation(modelType);
+        console.log(`Temporal validation completed for ${modelType} with credibility: ${result.scientificCredibility.overallCredibility.toFixed(1)}%`);
+        
+        return res.json({
+          message: `Temporal validation completed for ${modelType} model`,
+          result: result,
+          scientificCredibility: result.scientificCredibility.overallCredibility
+        });
+      } catch (validationError) {
+        console.error(`Temporal validation error for ${modelType}:`, validationError);
+        return res.status(500).json({ 
+          error: "Temporal validation failed",
+          details: validationError instanceof Error ? validationError.message : 'Unknown validation error'
+        });
+      }
     } catch (error) {
-      console.error('Temporal validation error:', error);
-      res.status(500).json({ error: "Failed to run temporal validation" });
+      console.error('Temporal validation endpoint error:', error);
+      res.status(500).json({ 
+        error: "Failed to start temporal validation",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

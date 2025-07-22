@@ -90,17 +90,23 @@ export function TemporalValidation({ modelType = 'pytorch' }: TemporalValidation
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/temporal-validation/results'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/temporal-validation/results', modelType] });
       setIsValidating(false);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Temporal validation error:', error);
       setIsValidating(false);
     }
   });
 
   const handleStartValidation = async (model: 'pytorch' | 'ollama') => {
     setIsValidating(true);
-    await validationMutation.mutateAsync(model);
+    try {
+      await validationMutation.mutateAsync(model);
+    } catch (error) {
+      console.error('Validation error:', error);
+      setIsValidating(false);
+    }
   };
 
   const getCredibilityColor = (score: number) => {
@@ -160,7 +166,16 @@ export function TemporalValidation({ modelType = 'pytorch' }: TemporalValidation
             <Alert className="mt-4">
               <Zap className="h-4 w-4" />
               <AlertDescription>
-                Running comprehensive temporal validation... This may take several minutes.
+                Running comprehensive temporal validation... This runs in the background and results will appear shortly.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {validationMutation.isError && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Temporal validation failed. Please try again or check the server logs.
               </AlertDescription>
             </Alert>
           )}
