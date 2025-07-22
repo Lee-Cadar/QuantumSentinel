@@ -30,7 +30,7 @@ Preferred communication style: Simple, everyday language.
 ✓ **Fixed Session Tracking**: Training sessions now properly increment (was stuck at 1, now tracks correctly)
 ✓ **Confidence Display Fix**: Ollama model now shows proper confidence percentage matching accuracy
 ✓ **Real Data Counts**: Prediction reports display actual earthquake dataset size instead of placeholder "100"
-✓ **Standalone Ollama Component Removed**: Cleaned up separate Ollama AI prediction panel as requested
+✓ **Ollama Training Section Restored**: Re-added Ollama AI model training section alongside PyTorch in hybrid interface
 ✓ **Enhanced Interactive Map Integration**: Hybrid predictions now show specific earthquake locations on map
 ✓ **Geographic Prediction Locations**: Added realistic seismic zone targeting with major fault lines (San Andreas, Ring of Fire, etc.)
 ✓ **Streamlined PyTorch Focus**: Simplified interface to concentrate on high-performing PyTorch model (92.5% accuracy)
