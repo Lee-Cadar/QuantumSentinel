@@ -366,7 +366,7 @@ export class IndustryBenchmarkSystem {
     if (precisionRanking <= 3) competitiveAdvantages.push("Top-3 precision performance");
     if (recallRanking <= 3) competitiveAdvantages.push("Top-3 recall performance");
     if (ourModel.accuracy > 95) competitiveAdvantages.push("Superior accuracy (95%+)");
-    if (modelType === 'pytorch') competitiveAdvantages.push("Open-source and customizable");
+    if (ourModel.name.includes('PyTorch')) competitiveAdvantages.push("Open-source and customizable");
     competitiveAdvantages.push("Real-time processing capability");
     competitiveAdvantages.push("Hybrid AI approach");
     competitiveAdvantages.push("Cascadia Subduction Zone specialization");
