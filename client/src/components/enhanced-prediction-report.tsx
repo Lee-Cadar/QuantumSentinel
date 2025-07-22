@@ -8,14 +8,9 @@ import { MapPin, Brain, Activity, Database, AlertTriangle, TrendingUp, Eye, EyeO
 // import { InteractiveMap } from "./interactive-map"; // Will be added later
 
 interface PredictionLocation {
-  region: string;
-  coordinates: {
-    latitude: number;
-    longitude: number;
-  };
-  seismicZone: string;
-  predictedEpicenter: string;
-  confidence: string;
+  name: string;
+  lat: number;
+  lng: number;
 }
 
 interface EnhancedPredictionReportProps {
@@ -187,23 +182,19 @@ export function EnhancedPredictionReport({ prediction, onHide }: EnhancedPredict
                     <CardContent className="p-4">
                       <div className="space-y-3">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Target Region:</span>
-                          <span className="font-semibold">{prediction.analysis.predictedLocation.region}</span>
-                        </div>
-                        <div className="flex justify-between">
                           <span className="text-sm text-gray-600 dark:text-gray-400">Seismic Zone:</span>
-                          <span className="font-semibold">{prediction.analysis.predictedLocation.seismicZone}</span>
+                          <span className="font-semibold">{prediction.analysis.predictedLocation?.name || 'Regional Area'}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm text-gray-600 dark:text-gray-400">Coordinates:</span>
                           <span className="font-mono text-sm">
-                            {prediction.analysis.predictedLocation.coordinates.latitude.toFixed(4)}°, 
-                            {prediction.analysis.predictedLocation.coordinates.longitude.toFixed(4)}°
+                            {prediction.analysis.predictedLocation?.lat?.toFixed(4) || '0.0000'}°, 
+                            {prediction.analysis.predictedLocation?.lng?.toFixed(4) || '0.0000'}°
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Location Confidence:</span>
-                          <Badge variant="outline">{prediction.analysis.predictedLocation.confidence}</Badge>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Location Source:</span>
+                          <Badge variant="outline">AI Prediction</Badge>
                         </div>
                       </div>
                     </CardContent>
@@ -216,8 +207,8 @@ export function EnhancedPredictionReport({ prediction, onHide }: EnhancedPredict
                       <MapPin className="h-12 w-12 text-red-500 mx-auto" />
                       <div className="font-semibold">Predicted Epicenter</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {prediction.analysis.predictedLocation.coordinates.latitude.toFixed(4)}°, 
-                        {prediction.analysis.predictedLocation.coordinates.longitude.toFixed(4)}°
+                        {prediction.analysis.predictedLocation?.lat?.toFixed(4) || '0.0000'}°, 
+                        {prediction.analysis.predictedLocation?.lng?.toFixed(4) || '0.0000'}°
                       </div>
                       <div className="text-xs text-gray-500">
                         Interactive map integration coming soon
