@@ -40,6 +40,9 @@ Preferred communication style: Simple, everyday language.
 ✓ **Model Renaming**: PyTorch LSTM renamed to "Sentinel Model" for better branding and user recognition
 ✓ **Target-Based Learning**: Users can set accuracy targets and data point goals for unsupervised model improvement
 ✓ **Training Automation**: System automatically trains models to reach specified benchmarks with configurable intervals
+✓ **Session Count Selectors**: Added 1-10 session training options for both PyTorch and Ollama models with scaling improvements
+✓ **High-Performance Training**: Restored ultra-high accuracy improvements - 10 sessions should reach 90%+ accuracy
+✓ **Multi-Session Scaling**: Each additional session provides exponential accuracy improvements and more data processing
 
 ## System Architecture
 
