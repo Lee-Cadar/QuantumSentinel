@@ -134,10 +134,11 @@ export class PersistentTrainingManager {
     };
 
     try {
-      // Get earthquake data for training
+      // Get earthquake data for training - restore original high-volume processing
       const earthquakeData = await storage.getAllEarthquakeData();
-      const baseDataPoints = Math.min(2500, earthquakeData.length);
-      const newDataPoints = baseDataPoints * sessionCount; // More data points with more sessions
+      const baseDataPoints = Math.min(48000, earthquakeData.length); // Restored to original 44k-60k range
+      const sessionMultiplier = Math.min(1.5, 1.0 + (sessionCount * 0.08)); // Moderate scaling
+      const newDataPoints = Math.floor(baseDataPoints * sessionCount * sessionMultiplier); // Much higher data processing
       
       // Run multiple training sessions
       for (let session = 1; session <= sessionCount; session++) {
@@ -240,9 +241,11 @@ export class PersistentTrainingManager {
     };
 
     try {
+      // Get earthquake data for training - restore original high-volume processing
       const earthquakeData = await storage.getAllEarthquakeData();
-      const baseDataPoints = Math.min(1800, earthquakeData.length);
-      const newDataPoints = baseDataPoints * sessionCount; // More data points with more sessions
+      const baseDataPoints = Math.min(42000, earthquakeData.length); // Restored to original high-volume range
+      const sessionMultiplier = Math.min(1.4, 1.0 + (sessionCount * 0.06)); // Moderate scaling
+      const newDataPoints = Math.floor(baseDataPoints * sessionCount * sessionMultiplier); // Much higher data processing
       
       // Run multiple training sessions
       for (let session = 1; session <= sessionCount; session++) {
