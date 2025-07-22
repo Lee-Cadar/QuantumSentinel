@@ -69,9 +69,9 @@ export default function PredictionPanel() {
   });
 
   const getLatestPrediction = (type: string) => {
-    return predictions
-      .filter(p => p.disasterType === type)
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+    return (predictions as any[])
+      .filter((p: any) => p.disasterType === type)
+      .sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
   };
 
   const earthquakePrediction = getLatestPrediction("earthquake");
@@ -114,31 +114,31 @@ export default function PredictionPanel() {
                   AI Model Performance
                 </h4>
                 <span className="text-xs" style={{ color: 'var(--neutral-gray)' }}>
-                  Updated: {new Date(modelMetrics.lastUpdated).toLocaleTimeString()}
+                  Updated: {new Date((modelMetrics as any).lastUpdated || Date.now()).toLocaleTimeString()}
                 </span>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="text-center">
                   <p className="text-lg font-bold" style={{ color: 'hsl(207, 90%, 54%)' }}>
-                    {modelMetrics.accuracy.toFixed(1)}%
+                    {((modelMetrics as any).accuracy || 0).toFixed(1)}%
                   </p>
                   <p className="text-xs" style={{ color: 'var(--neutral-gray)' }}>Accuracy</p>
                 </div>
                 <div className="text-center">
                   <p className="text-lg font-bold" style={{ color: 'var(--safe-green)' }}>
-                    {modelMetrics.precision.toFixed(1)}%
+                    {((modelMetrics as any).precision || 0).toFixed(1)}%
                   </p>
                   <p className="text-xs" style={{ color: 'var(--neutral-gray)' }}>Precision</p>
                 </div>
                 <div className="text-center">
                   <p className="text-lg font-bold" style={{ color: 'var(--warning-orange)' }}>
-                    {modelMetrics.recall.toFixed(1)}%
+                    {((modelMetrics as any).recall || 0).toFixed(1)}%
                   </p>
                   <p className="text-xs" style={{ color: 'var(--neutral-gray)' }}>Recall</p>
                 </div>
                 <div className="text-center">
                   <p className="text-lg font-bold text-slate-900">
-                    {modelMetrics.totalPredictions}
+                    {(modelMetrics as any).totalPredictions || 0}
                   </p>
                   <p className="text-xs" style={{ color: 'var(--neutral-gray)' }}>Predictions</p>
                 </div>

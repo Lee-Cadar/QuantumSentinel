@@ -1,13 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, RefreshCw } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix Leaflet default markers
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 export default function DisasterHeatmap() {
   const [selectedType, setSelectedType] = useState("earthquake");
   const queryClient = useQueryClient();
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<L.Map | null>(null);
 
   const { data: disasters = [], isLoading } = useQuery({
     queryKey: ["/api/disasters", selectedType],
@@ -35,10 +47,90 @@ export default function DisasterHeatmap() {
   };
 
   const getIntensitySize = (intensity: number) => {
-    if (intensity >= 7.0) return "h-4 w-4";
-    if (intensity >= 5.0) return "h-3 w-3";
-    return "h-2 w-2";
+    if (intensity >= 7.0) return Math.max(20, intensity * 3);
+    if (intensity >= 5.0) return Math.max(15, intensity * 2.5);
+    return Math.max(10, intensity * 2);
   };
+
+  // Initialize and update map
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    // Initialize map
+    if (!mapInstance.current) {
+      mapInstance.current = L.map(mapRef.current).setView([39.8283, -98.5795], 4); // US center
+
+      // Add OpenStreetMap tiles
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 18,
+      }).addTo(mapInstance.current);
+    }
+
+    const map = mapInstance.current;
+
+    // Clear existing markers
+    map.eachLayer((layer) => {
+      if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
+        map.removeLayer(layer);
+      }
+    });
+
+    // Add disaster markers
+    if (disasters && Array.isArray(disasters)) {
+      disasters.forEach((disaster: any) => {
+        if (disaster.latitude && disaster.longitude) {
+          const intensity = disaster.intensity || disaster.magnitude || 4.0;
+          const color = getIntensityColor(intensity);
+          const size = getIntensitySize(intensity);
+          
+          const marker = L.circleMarker([disaster.latitude, disaster.longitude], {
+            radius: Math.max(5, size / 2),
+            fillColor: color,
+            color: '#fff',
+            weight: 2,
+            opacity: 0.8,
+            fillOpacity: 0.6
+          }).addTo(map);
+
+          const popupContent = `
+            <div style="font-family: system-ui; min-width: 180px;">
+              <h4 style="margin: 0 0 8px 0; color: #1f2937;">${disaster.location}</h4>
+              <div style="margin-bottom: 4px;">
+                <strong>Type:</strong> ${disaster.disasterType}
+              </div>
+              <div style="margin-bottom: 4px;">
+                <strong>Intensity:</strong> ${intensity.toFixed(1)}
+              </div>
+              <div style="margin-bottom: 8px;">
+                <strong>Status:</strong> ${disaster.status || 'Active'}
+              </div>
+              <div style="font-size: 12px; color: #6b7280;">
+                Last updated: ${new Date(disaster.timestamp || Date.now()).toLocaleDateString()}
+              </div>
+            </div>
+          `;
+
+          marker.bindPopup(popupContent);
+        }
+      });
+
+      // Fit map to show all markers if there are any
+      if (disasters.length > 0) {
+        const validDisasters = disasters.filter((d: any) => d.latitude && d.longitude);
+        if (validDisasters.length > 0) {
+          const group = new L.FeatureGroup(
+            validDisasters.map((d: any) => L.marker([d.latitude, d.longitude]))
+          );
+          map.fitBounds(group.getBounds().pad(0.1));
+        }
+      }
+    }
+
+    return () => {
+      // Cleanup handled by map instance persistence
+    };
+  }, [disasters, selectedType]);
 
   return (
     <Card className="bg-white rounded-xl shadow-lg">
@@ -79,40 +171,11 @@ export default function DisasterHeatmap() {
           </div>
         ) : (
           <>
-            <div className="h-80 bg-gradient-to-br from-slate-200 to-slate-300 rounded-lg relative overflow-hidden">
-              {disasters.map((disaster, index) => {
-                // Convert lat/lng to relative positions (simplified)
-                const x = ((disaster.longitude + 180) / 360) * 100;
-                const y = ((90 - disaster.latitude) / 180) * 100;
-                
-                return (
-                  <div
-                    key={disaster.id}
-                    className={`absolute rounded-full animate-pulse-emergency ${getIntensitySize(disaster.intensity)}`}
-                    style={{
-                      left: `${Math.max(0, Math.min(95, x))}%`,
-                      top: `${Math.max(0, Math.min(95, y))}%`,
-                      backgroundColor: getIntensityColor(disaster.intensity)
-                    }}
-                    title={`${disaster.location} - Intensity: ${disaster.intensity}`}
-                  />
-                );
-              })}
-              
-              {disasters.length === 0 && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-white bg-opacity-90 p-4 rounded-lg text-center">
-                    <MapPin className="h-12 w-12 mx-auto mb-2" style={{ color: 'var(--neutral-gray)' }} />
-                    <p className="font-medium" style={{ color: 'var(--neutral-gray)' }}>
-                      No {selectedType} data available
-                    </p>
-                    <p className="text-sm" style={{ color: 'var(--neutral-gray)' }}>
-                      Try refreshing or select a different disaster type
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+            <div 
+              ref={mapRef} 
+              style={{ height: '320px', width: '100%' }}
+              className="border rounded-lg overflow-hidden"
+            />
             
             <div className="mt-4 flex items-center justify-center space-x-6">
               <div className="flex items-center space-x-2">
@@ -127,6 +190,24 @@ export default function DisasterHeatmap() {
                 <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                 <span className="text-sm" style={{ color: 'var(--neutral-gray)' }}>Low (3.0-4.9)</span>
               </div>
+            </div>
+
+            {disasters.length === 0 && (
+              <div className="mt-4 text-center">
+                <div className="bg-white bg-opacity-90 p-4 rounded-lg">
+                  <MapPin className="h-12 w-12 mx-auto mb-2" style={{ color: 'var(--neutral-gray)' }} />
+                  <p className="font-medium" style={{ color: 'var(--neutral-gray)' }}>
+                    No {selectedType} data available
+                  </p>
+                  <p className="text-sm" style={{ color: 'var(--neutral-gray)' }}>
+                    Try refreshing or select a different disaster type
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-4 text-xs text-gray-500">
+              <p>🌍 Map powered by OpenStreetMap • Click markers for details • Real disaster data from USGS</p>
             </div>
           </>
         )}

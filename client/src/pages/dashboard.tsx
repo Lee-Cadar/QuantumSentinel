@@ -5,7 +5,7 @@ import MetricsOverview from "@/components/metrics-overview";
 import DisasterHeatmap from "@/components/disaster-heatmap";
 import ActiveAlerts from "@/components/active-alerts";
 import PredictionPanel from "@/components/prediction-panel";
-import EarthquakePredictionMap from "@/components/earthquake-prediction-map";
+import EarthquakeMap from "@/components/earthquake-map";
 import IncidentReporting from "@/components/incident-reporting";
 import RouteOptimization from "@/components/route-optimization";
 import RecentActivity from "@/components/recent-activity";
@@ -32,11 +32,13 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
           <PredictionPanel />
-          <EarthquakePredictionMap 
+          <EarthquakeMap 
+            earthquakes={[]}
             predictions={predictions}
             onLocationSelect={(location) => {
               console.log('Selected earthquake location:', location);
             }}
+            height="500px"
           />
         </div>
 
