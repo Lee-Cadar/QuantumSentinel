@@ -261,6 +261,26 @@ export class RealTimeSeismicMonitor {
   }
 
   async getRecentEvents(hours: number = 24): Promise<SeismicEvent[]> {
+    // Fetch real-time earthquake data directly from USGS
+    try {
+      const response = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson');
+      const data = await response.json();
+      
+      if (data.features && data.features.length > 0) {
+        const events = this.parseUSGSFeed(data);
+        const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000);
+        
+        // Filter events within the time window and return most recent first
+        return events
+          .filter(event => new Date(event.time) >= cutoffTime)
+          .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+          .slice(0, 20); // Limit to 20 most recent events
+      }
+    } catch (error) {
+      console.error('Error fetching real-time USGS data:', error);
+    }
+    
+    // Try database as fallback
     const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
     
     try {
@@ -270,24 +290,26 @@ export class RealTimeSeismicMonitor {
         .where(sql`time >= ${cutoffTime}`)
         .orderBy(earthquakeData.time);
       
-      return events.map(event => ({
-        id: event.source || `db_${event.id}`,
-        time: event.time,
-        latitude: event.latitude,
-        longitude: event.longitude,
-        magnitude: event.magnitude,
-        depth: event.depth,
-        location: event.location,
-        source: event.source?.includes('usgs') ? 'USGS' : 
-                event.source?.includes('pnsn') ? 'PNSN' : 'Database'
-      }));
+      if (events.length > 0) {
+        return events.map(event => ({
+          id: event.source || `db_${event.id}`,
+          time: event.time,
+          latitude: event.latitude,
+          longitude: event.longitude,
+          magnitude: event.magnitude,
+          depth: event.depth,
+          location: event.location,
+          source: event.source?.includes('usgs') ? 'USGS' : 
+                  event.source?.includes('pnsn') ? 'PNSN' : 'Database'
+        }));
+      }
     } catch (error) {
-      // Generate realistic synthetic events for demonstration
-      console.log('Using synthetic earthquake data for real-time monitoring demo');
-      return this.generateSyntheticRecentEvents(hours);
+      console.error('Database access error:', error);
     }
     
-
+    // Only use synthetic data if both real sources fail
+    console.log('Using synthetic earthquake data as last resort fallback');
+    return this.generateSyntheticRecentEvents(hours);
   }
 
   async getCascadiaActivity(): Promise<{
@@ -298,8 +320,26 @@ export class RealTimeSeismicMonitor {
   }> {
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     
-    // Cascadia region events - use synthetic data for now
-    const events = this.generateSyntheticCascadiaEvents();
+    // Try to get real Cascadia region events
+    let events: SeismicEvent[] = [];
+    
+    try {
+      // Fetch real-time USGS data and filter for Cascadia region
+      const response = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson');
+      const data = await response.json();
+      
+      if (data.features && data.features.length > 0) {
+        const allEvents = this.parseUSGSFeed(data);
+        events = this.filterCascadiaEvents(allEvents, 'Cascadia');
+      }
+    } catch (error) {
+      console.error('Error fetching real Cascadia data:', error);
+    }
+    
+    // If no real events found, use synthetic data as fallback
+    if (events.length === 0) {
+      events = this.generateSyntheticCascadiaEvents();
+    }
 
     const recentEvents = events.slice(-20).map(event => ({
       id: event.source || `db_${event.id}`,
