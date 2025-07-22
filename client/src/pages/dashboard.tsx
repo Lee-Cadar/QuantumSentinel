@@ -51,7 +51,7 @@ export default function Dashboard() {
           <NewsWidget />
         </div>
 
-        <div className="mt-6">
+        <div className="mt-4">
           <RecentActivity />
         </div>
       </main>

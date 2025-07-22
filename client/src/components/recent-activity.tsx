@@ -77,28 +77,28 @@ export default function RecentActivity() {
 
   return (
     <Card className="bg-white rounded-xl shadow-lg">
-      <CardHeader className="px-6 py-4 border-b border-slate-200">
+      <CardHeader className="px-4 py-2 border-b border-slate-200">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-slate-900">Recent Disaster Activity</h2>
+          <h2 className="text-lg font-bold text-slate-900">Recent Disaster Activity</h2>
           <Button
             variant="outline"
             size="sm"
             onClick={() => refreshMutation.mutate()}
             disabled={refreshMutation.isPending}
-            className="font-medium"
+            className="font-medium text-xs h-7"
             style={{ color: 'var(--emergency-red)' }}
           >
-            <RefreshCw className={`h-4 w-4 mr-1 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
-            Refresh Data
+            <RefreshCw className={`h-3 w-3 mr-1 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
+            Refresh
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="p-4">
+      <CardContent className="p-2">
         {isLoading ? (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="h-16 bg-slate-200 rounded"></div>
+                <div className="h-8 bg-slate-200 rounded"></div>
               </div>
             ))}
           </div>
@@ -108,12 +108,12 @@ export default function RecentActivity() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-200">
-                    <th className="text-left py-2 px-3 font-semibold text-slate-900">Type</th>
-                    <th className="text-left py-2 px-3 font-semibold text-slate-900">Location</th>
-                    <th className="text-left py-2 px-3 font-semibold text-slate-900">Intensity</th>
-                    <th className="text-left py-2 px-3 font-semibold text-slate-900">Time</th>
-                    <th className="text-left py-2 px-3 font-semibold text-slate-900">Status</th>
-                    <th className="text-left py-2 px-3 font-semibold text-slate-900">Source</th>
+                    <th className="text-left py-1 px-2 font-semibold text-slate-900 text-xs">Type</th>
+                    <th className="text-left py-1 px-2 font-semibold text-slate-900 text-xs">Location</th>
+                    <th className="text-left py-1 px-2 font-semibold text-slate-900 text-xs">Intensity</th>
+                    <th className="text-left py-1 px-2 font-semibold text-slate-900 text-xs">Time</th>
+                    <th className="text-left py-1 px-2 font-semibold text-slate-900 text-xs">Status</th>
+                    <th className="text-left py-1 px-2 font-semibold text-slate-900 text-xs">Source</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -125,44 +125,40 @@ export default function RecentActivity() {
                     
                     return (
                       <tr key={disaster.id} className="hover:bg-slate-50">
-                        <td className="py-2 px-3">
-                          <div className="flex items-center space-x-2">
-                            <IconComponent className="h-4 w-4" style={{ color: intensityColor }} />
-                            <span className="font-medium capitalize text-sm">{disaster.disasterType}</span>
+                        <td className="py-1 px-2">
+                          <div className="flex items-center space-x-1">
+                            <IconComponent className="h-3 w-3" style={{ color: intensityColor }} />
+                            <span className="font-medium capitalize text-xs">{disaster.disasterType}</span>
                           </div>
                         </td>
-                        <td className="py-2 px-3" style={{ color: 'var(--neutral-gray)' }}>
-                          <div className="flex flex-col">
-                            <span className="text-xs">
-                              {disaster.latitude.toFixed(4)}°N, {disaster.longitude.toFixed(4)}°W
-                            </span>
-                            <span className="text-xs">{disaster.location}</span>
+                        <td className="py-1 px-2 text-xs" style={{ color: 'var(--neutral-gray)' }}>
+                          <div>
+                            <div className="truncate max-w-24">{disaster.location}</div>
                           </div>
                         </td>
-                        <td className="py-2 px-3">
+                        <td className="py-1 px-2">
                           <span 
-                            className="text-white px-1.5 py-0.5 rounded text-xs font-medium"
+                            className="text-white px-1 py-0.5 rounded text-xs font-medium"
                             style={{ backgroundColor: intensityColor }}
                           >
                             {disaster.intensity.toFixed(1)}
                           </span>
                         </td>
-                        <td className="py-2 px-3" style={{ color: 'var(--neutral-gray)' }}>
-                          <div className="flex flex-col">
-                            <span className="text-xs">{timeInfo.date} {timeInfo.time}</span>
-                            <span className="text-xs">{timeInfo.relative}</span>
+                        <td className="py-1 px-2 text-xs" style={{ color: 'var(--neutral-gray)' }}>
+                          <div>
+                            <div>{timeInfo.relative}</div>
                           </div>
                         </td>
-                        <td className="py-2 px-3">
+                        <td className="py-1 px-2">
                           <span 
-                            className="text-white px-1.5 py-0.5 rounded text-xs"
+                            className="text-white px-1 py-0.5 rounded text-xs"
                             style={{ backgroundColor: statusColor }}
                           >
                             {disaster.verified ? "Verified" : "Pending"}
                           </span>
                         </td>
-                        <td className="py-2 px-3 text-xs" style={{ color: 'var(--neutral-gray)' }}>
-                          {disaster.source}
+                        <td className="py-1 px-2 text-xs" style={{ color: 'var(--neutral-gray)' }}>
+                          USGS
                         </td>
                       </tr>
                     );
