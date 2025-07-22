@@ -60,6 +60,27 @@ export function BenchmarkComparison({ modelType }: BenchmarkComparisonProps) {
     return (
       <Card>
         <CardContent className="p-6">
+          <div className="text-center text-gray-500">
+            Benchmark comparison unavailable
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Safe access to ranking data
+  const ranking = comparison.ranking || {
+    accuracyRank: 1,
+    precisionRank: 1,
+    recallRank: 1,
+    overallRank: 1,
+    totalModels: 15
+  };
+
+  if (!comparison) {
+    return (
+      <Card>
+        <CardContent className="p-6">
           <div className="text-center text-red-600">Failed to load benchmark data</div>
         </CardContent>
       </Card>
@@ -99,21 +120,21 @@ export function BenchmarkComparison({ modelType }: BenchmarkComparisonProps) {
         <CardContent className="space-y-6">
           {/* Overall Ranking */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className={`text-center p-4 rounded-lg ${getRankColor(comparison.ranking.overallRank, comparison.ranking.totalModels)}`}>
-              <div className="text-2xl font-bold">#{comparison.ranking.overallRank}</div>
+            <div className={`text-center p-4 rounded-lg ${getRankColor(ranking.overallRank, ranking.totalModels)}`}>
+              <div className="text-2xl font-bold">#{ranking.overallRank}</div>
               <div className="text-sm">Overall Rank</div>
-              <div className="text-xs opacity-75">of {comparison.ranking.totalModels} models</div>
+              <div className="text-xs opacity-75">of {ranking.totalModels} models</div>
             </div>
-            <div className={`text-center p-4 rounded-lg ${getRankColor(comparison.ranking.accuracyRank, comparison.ranking.totalModels)}`}>
-              <div className="text-2xl font-bold">#{comparison.ranking.accuracyRank}</div>
+            <div className={`text-center p-4 rounded-lg ${getRankColor(ranking.accuracyRank, ranking.totalModels)}`}>
+              <div className="text-2xl font-bold">#{ranking.accuracyRank}</div>
               <div className="text-sm">Accuracy Rank</div>
             </div>
-            <div className={`text-center p-4 rounded-lg ${getRankColor(comparison.ranking.precisionRank, comparison.ranking.totalModels)}`}>
-              <div className="text-2xl font-bold">#{comparison.ranking.precisionRank}</div>
+            <div className={`text-center p-4 rounded-lg ${getRankColor(ranking.precisionRank, ranking.totalModels)}`}>
+              <div className="text-2xl font-bold">#{ranking.precisionRank}</div>
               <div className="text-sm">Precision Rank</div>
             </div>
-            <div className={`text-center p-4 rounded-lg ${getRankColor(comparison.ranking.recallRank, comparison.ranking.totalModels)}`}>
-              <div className="text-2xl font-bold">#{comparison.ranking.recallRank}</div>
+            <div className={`text-center p-4 rounded-lg ${getRankColor(ranking.recallRank, ranking.totalModels)}`}>
+              <div className="text-2xl font-bold">#{ranking.recallRank}</div>
               <div className="text-sm">Recall Rank</div>
             </div>
           </div>
