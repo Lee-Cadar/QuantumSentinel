@@ -173,7 +173,16 @@ export default function EarthquakeMap({
       const group = new L.FeatureGroup(
         allLocations.map(loc => L.marker([loc.lat, loc.lng]))
       );
-      map.fitBounds(group.getBounds().pad(0.1));
+      
+      // If we have both predictions and real earthquakes, make sure we can see both
+      const bounds = group.getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds.pad(0.1));
+      } else if (allLocations.length === 1) {
+        // If only one location (like a prediction), center on it with appropriate zoom
+        const location = allLocations[0];
+        map.setView([location.lat, location.lng], 6);
+      }
     }
 
     return () => {
