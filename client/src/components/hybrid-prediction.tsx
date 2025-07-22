@@ -94,12 +94,7 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
     refetchInterval: 30000
   });
 
-  // Fetch Ollama model metrics
-  const { data: ollamaMetrics } = useQuery({
-    queryKey: ['/api/predictions/model-metrics', 'ollama'],
-    queryFn: () => fetch('/api/predictions/model-metrics?model=ollama').then(r => r.json()),
-    refetchInterval: 30000
-  });
+
 
   const generatePredictionMutation = useMutation({
     mutationFn: async (data: { disasterType: string; region?: string; predictionType: string }) => {
@@ -348,8 +343,8 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
 
         <TabsContent value="training" className="space-y-6">
           {/* Model Training Section with Progress Indicators */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* PyTorch Training */}
+          <div className="grid grid-cols-1 gap-6">
+            {/* PyTorch Training - Full Width */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -435,108 +430,37 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
           </CardContent>
         </Card>
 
-        {/* Ollama Training */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-green-600" />
-              Ollama AI Model
-            </CardTitle>
-            <CardDescription>
-              Local AI model for reasoning and risk assessment
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Ollama Metrics */}
-            {ollamaMetrics && (
-              <div className="bg-green-50 p-3 rounded-lg">
-                <h4 className="font-semibold text-green-900 mb-2">Current Performance</h4>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="text-center">
-                    <div className="font-bold text-green-700">{(ollamaMetrics.accuracy || 0).toFixed(1)}%</div>
-                    <div className="text-green-600">Accuracy</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-bold text-green-700">{(ollamaMetrics.confidence || ollamaMetrics.accuracy || 0).toFixed(1)}%</div>
-                    <div className="text-green-600">Confidence</div>
-                  </div>
-                </div>
-                <div className="mt-2 pt-2 border-t border-green-200">
-                  <div className="flex justify-between text-xs text-green-600">
-                    <span>Training Data:</span>
-                    <span className="font-medium">
-                      {(ollamaMetrics.trainingDataCount || 0).toLocaleString()} records
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs text-green-600">
-                    <span>Sessions:</span>
-                    <span className="font-medium">{ollamaMetrics.trainingSessions || 0}</span>
-                  </div>
-                </div>
-              </div>
-            )}
 
-            {/* Training Progress for Ollama */}
-            {trainingProgress.ollama && trainingProgress.ollama.status !== 'idle' && (
-              <div className="space-y-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-green-900">Training Progress</span>
-                  <Badge variant={trainingProgress.ollama.status === 'completed' ? 'default' : trainingProgress.ollama.status === 'error' ? 'destructive' : 'secondary'}>
-                    {trainingProgress.ollama.progress.toFixed(0)}%
-                  </Badge>
-                </div>
-                <Progress value={trainingProgress.ollama.progress} className="h-2" />
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1 text-green-700">
-                    <Activity className="h-3 w-3" />
-                    <span>{trainingProgress.ollama.currentStep}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-slate-500">
-                    <Clock className="h-3 w-3" />
-                    <span>{trainingProgress.ollama.eta}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <Button 
-              onClick={() => handleTrainModel('ollama')} 
-              disabled={trainModelMutation.isPending || trainingProgress.ollama?.status === 'training'}
-              className="w-full"
-              variant="outline"
-            >
-              <Brain className="h-4 w-4 mr-2" />
-              {trainingProgress.ollama?.status === 'training' ? 'Training...' : 'Train Ollama Model'}
-            </Button>
-          </CardContent>
-        </Card>
           </div>
         </TabsContent>
 
         <TabsContent value="benchmark" className="space-y-6">
-          <BenchmarkComparison modelType={predictionType === 'hybrid' ? 'pytorch' : predictionType} />
+          <BenchmarkComparison modelType="pytorch" />
         </TabsContent>
 
         <TabsContent value="predictions" className="space-y-6">
           {/* Prediction Generation */}
           <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {getPredictionTypeIcon()}
-            Generate {predictionType.toUpperCase()} Prediction
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Button
-            onClick={handleGeneratePrediction}
-            disabled={generatePredictionMutation.isPending}
-            className="w-full bg-red-600 hover:bg-red-700 text-white"
-          >
-            <Brain className="h-4 w-4 mr-2" />
-            {generatePredictionMutation.isPending ? 'Generating...' : `Generate ${predictionType.toUpperCase()} Prediction`}
-          </Button>
-        </CardContent>
-      </Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {getPredictionTypeIcon()}
+                Generate Hybrid AI Prediction
+              </CardTitle>
+              <CardDescription>
+                Generate earthquake predictions with geographic locations shown on the interactive map
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                onClick={handleGeneratePrediction}
+                disabled={generatePredictionMutation.isPending}
+                className="w-full bg-red-600 hover:bg-red-700 text-white"
+              >
+                <Brain className="h-4 w-4 mr-2" />
+                {generatePredictionMutation.isPending ? 'Generating Prediction...' : 'Generate Hybrid Prediction'}
+              </Button>
+            </CardContent>
+          </Card>
 
           {/* Latest Prediction Report */}
           {showPredictionReport && latestPrediction && (
