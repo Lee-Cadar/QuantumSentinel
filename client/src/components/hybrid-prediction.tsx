@@ -473,12 +473,12 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
 
             {/* Session Count Selector for Sentinel Model */}
             <div className="space-y-2">
-              <Label htmlFor="sentinel-sessions" className="text-sm">Training Sessions</Label>
+              <Label htmlFor="sentinel-sessions" className="text-sm font-medium">Training Sessions</Label>
               <Select 
                 value={sentinelSessionCount.toString()} 
                 onValueChange={(value) => setSentinelSessionCount(parseInt(value))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select sessions" />
                 </SelectTrigger>
                 <SelectContent>
@@ -578,12 +578,12 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
 
             {/* Session Count Selector for Ollama Model */}
             <div className="space-y-2">
-              <Label htmlFor="ollama-sessions" className="text-sm">Training Sessions</Label>
+              <Label htmlFor="ollama-sessions" className="text-sm font-medium">Training Sessions</Label>
               <Select 
                 value={ollamaSessionCount.toString()} 
                 onValueChange={(value) => setOllamaSessionCount(parseInt(value))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select sessions" />
                 </SelectTrigger>
                 <SelectContent>
