@@ -5,7 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, Zap, TrendingUp, AlertTriangle, Clock, Activity, Cpu, Database } from "lucide-react";
+import { Brain, Zap, TrendingUp, AlertTriangle, Clock, Activity, Cpu, Database, Trophy } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BenchmarkComparison } from "./benchmark-comparison";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -336,9 +338,18 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
         </CardContent>
       </Card>
 
-      {/* Model Training Section with Progress Indicators */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* PyTorch Training */}
+      {/* Main Interface with Tabs */}
+      <Tabs defaultValue="training" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="training">Model Training</TabsTrigger>
+          <TabsTrigger value="benchmark">Industry Benchmarks</TabsTrigger>
+          <TabsTrigger value="predictions">Generate Predictions</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="training" className="space-y-6">
+          {/* Model Training Section with Progress Indicators */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* PyTorch Training */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -499,10 +510,16 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
             </Button>
           </CardContent>
         </Card>
-      </div>
+          </div>
+        </TabsContent>
 
-      {/* Prediction Generation */}
-      <Card>
+        <TabsContent value="benchmark" className="space-y-6">
+          <BenchmarkComparison modelType={predictionType === 'hybrid' ? 'pytorch' : predictionType} />
+        </TabsContent>
+
+        <TabsContent value="predictions" className="space-y-6">
+          {/* Prediction Generation */}
+          <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             {getPredictionTypeIcon()}
@@ -521,26 +538,28 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
         </CardContent>
       </Card>
 
-      {/* Latest Prediction Report */}
-      {showPredictionReport && latestPrediction && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              Latest Prediction Report
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPredictionReport(false)}
-              >
-                Hide Report
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PredictionReport prediction={latestPrediction} showDetails={true} />
-          </CardContent>
-        </Card>
-      )}
+          {/* Latest Prediction Report */}
+          {showPredictionReport && latestPrediction && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  Latest Prediction Report
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPredictionReport(false)}
+                  >
+                    Hide Report
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PredictionReport prediction={latestPrediction} showDetails={true} />
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

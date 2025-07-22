@@ -67,6 +67,8 @@ export class EnhancedHybridPrediction {
   private cachedOllamaMetrics: any = null;
   private pytorchSessionCount: number = 0;
   private ollamaSessionCount: number = 0;
+  private totalPytorchDataProcessed: number = 0;
+  private totalOllamaDataProcessed: number = 0;
 
   constructor() {
     // Initialize with simple implementations
@@ -230,15 +232,16 @@ export class EnhancedHybridPrediction {
       await new Promise(resolve => setTimeout(resolve, 300));
     }
 
-    // Increment PyTorch session count and update metrics
+    // Increment PyTorch session count and accumulate total data
     this.pytorchSessionCount++;
+    this.totalPytorchDataProcessed += status.totalDataPoints;
     const finalAccuracy = status.currentAccuracy || 85;
     await this.updateModelMetrics('pytorch', {
       accuracy: finalAccuracy,
       precision: finalAccuracy * 0.92,
       recall: finalAccuracy * 0.95,
       f1Score: finalAccuracy * 0.93,
-      trainingDataCount: status.totalDataPoints,
+      trainingDataCount: this.totalPytorchDataProcessed, // Use cumulative total
       trainingSessions: this.pytorchSessionCount
     });
 
@@ -278,15 +281,16 @@ export class EnhancedHybridPrediction {
       await new Promise(resolve => setTimeout(resolve, 200));
     }
 
-    // Increment Ollama session count and update metrics
+    // Increment Ollama session count and accumulate total data
     this.ollamaSessionCount++;
+    this.totalOllamaDataProcessed += status.totalDataPoints;
     const finalAccuracy = status.currentAccuracy || 75;
     await this.updateModelMetrics('ollama', {
       accuracy: finalAccuracy,
       precision: finalAccuracy * 0.88,
       recall: finalAccuracy * 0.92,
       f1Score: finalAccuracy * 0.90,
-      trainingDataCount: status.totalDataPoints,
+      trainingDataCount: this.totalOllamaDataProcessed, // Use cumulative total
       trainingSessions: this.ollamaSessionCount
     });
 

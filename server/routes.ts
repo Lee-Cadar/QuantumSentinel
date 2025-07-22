@@ -10,6 +10,7 @@ import { EnhancedHybridPrediction } from './enhanced-hybrid-prediction';
 const enhancedHybridSystem = new EnhancedHybridPrediction();
 console.log('Enhanced hybrid prediction system initialized successfully');
 import { disasterNewsService } from "./news-service";
+import { benchmarkService, type BenchmarkComparison } from './benchmark-comparison.js';
 import { z } from "zod";
 
 const routeOptimizationSchema = z.object({
@@ -420,6 +421,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       res.status(500).json({ error: "Failed to get training status" });
+    }
+  });
+
+  // Benchmark comparison endpoint
+  app.get("/api/predictions/benchmark/:model", async (req, res) => {
+    try {
+      const { model } = req.params;
+      
+      if (!enhancedHybridSystem) {
+        return res.status(503).json({ error: "Enhanced hybrid system not available" });
+      }
+
+      if (model !== 'pytorch' && model !== 'ollama' && model !== 'hybrid') {
+        return res.status(400).json({ error: "Invalid model type. Use 'pytorch', 'ollama', or 'hybrid'" });
+      }
+
+      const metrics = enhancedHybridSystem.getModelMetrics(model as 'pytorch' | 'ollama');
+      const comparison = benchmarkService.compareModel(model as 'pytorch' | 'ollama', metrics);
+      
+      res.json(comparison);
+    } catch (error) {
+      console.error('Benchmark comparison error:', error);
+      res.status(500).json({ error: "Failed to generate benchmark comparison" });
     }
   });
 
