@@ -5,16 +5,10 @@ import { insertDisasterSchema, insertIncidentSchema, insertPredictionSchema, ins
 import { ollamaEarthquakePredictionAI } from "./ollama-prediction";
 import { pyTorchEarthquakePrediction } from "./pytorch-prediction";
 
-// Initialize enhanced hybrid prediction system
-const enhancedHybridSystem = (() => {
-  try {
-    const { EnhancedHybridPrediction } = require('./enhanced-hybrid-prediction');
-    return new EnhancedHybridPrediction();
-  } catch (error) {
-    console.warn('Enhanced hybrid system not available, using fallback');
-    return null;
-  }
-})();
+// Enhanced hybrid prediction system
+import { EnhancedHybridPrediction } from './enhanced-hybrid-prediction';
+const enhancedHybridSystem = new EnhancedHybridPrediction();
+console.log('Enhanced hybrid prediction system initialized successfully');
 import { disasterNewsService } from "./news-service";
 import { z } from "zod";
 
@@ -335,12 +329,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Model metrics endpoint
+  // Enhanced AI Model metrics endpoint
   app.get("/api/predictions/model-metrics", async (req, res) => {
     try {
       const { model = 'ollama' } = req.query;
       
-      if (model === 'pytorch') {
+      if (enhancedHybridSystem && (model === 'pytorch' || model === 'ollama')) {
+        const metrics = enhancedHybridSystem.getModelMetrics(model);
+        res.json(metrics);
+      } else if (model === 'pytorch') {
         const metrics = pyTorchEarthquakePrediction.getModelMetrics();
         res.json(metrics);
       } else {

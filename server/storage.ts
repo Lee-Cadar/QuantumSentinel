@@ -35,9 +35,14 @@ export interface IStorage {
   
   // Earthquake Data
   getEarthquakeData(): Promise<EarthquakeData[]>;
+  getAllEarthquakeData(): Promise<EarthquakeData[]>;
   getRecentEarthquakeData(limit: number): Promise<EarthquakeData[]>;
   createEarthquakeData(data: InsertEarthquakeData): Promise<EarthquakeData>;
+  addEarthquakeData(data: InsertEarthquakeData): Promise<EarthquakeData>;
   bulkCreateEarthquakeData(data: InsertEarthquakeData[]): Promise<EarthquakeData[]>;
+  
+  // Predictions extended
+  addPrediction(prediction: InsertPrediction): Promise<Prediction>;
   
   // Model Metrics
   getLatestModelMetrics(): Promise<ModelMetrics | undefined>;
@@ -104,6 +109,10 @@ export class DatabaseStorage implements IStorage {
     return newPrediction;
   }
 
+  async addPrediction(prediction: InsertPrediction): Promise<Prediction> {
+    return this.createPrediction(prediction);
+  }
+
   async getAlerts(): Promise<Alert[]> {
     return await db.select().from(alerts).where(eq(alerts.active, true)).orderBy(desc(alerts.timestamp));
   }
@@ -133,6 +142,14 @@ export class DatabaseStorage implements IStorage {
       .from(earthquakeData)
       .where(gte(earthquakeData.timestamp, thirtyDaysAgo))
       .orderBy(desc(earthquakeData.timestamp));
+  }
+
+  async getAllEarthquakeData(): Promise<EarthquakeData[]> {
+    return await db.select().from(earthquakeData).orderBy(desc(earthquakeData.timestamp));
+  }
+
+  async addEarthquakeData(data: InsertEarthquakeData): Promise<EarthquakeData> {
+    return this.createEarthquakeData(data);
   }
 
   async getRecentEarthquakeData(limit: number): Promise<EarthquakeData[]> {
