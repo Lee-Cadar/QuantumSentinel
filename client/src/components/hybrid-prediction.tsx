@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { PredictionReport } from "./prediction-report";
+import { EnhancedPredictionReport } from "./enhanced-prediction-report";
 
 interface HybridPredictionProps {
   onPredictionGenerated?: (prediction: any) => void;
@@ -675,7 +675,10 @@ export function HybridPrediction({ onPredictionGenerated }: HybridPredictionProp
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <PredictionReport prediction={latestPrediction} showDetails={true} />
+                <EnhancedPredictionReport 
+                  prediction={latestPrediction}
+                  onHide={() => setShowPredictionReport(false)}
+                />
               </CardContent>
             </Card>
           )}
