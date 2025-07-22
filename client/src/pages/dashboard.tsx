@@ -5,6 +5,7 @@ import { BenchmarkComparison } from "@/components/benchmark-comparison";
 import { TemporalValidation } from "@/components/temporal-validation";
 import { RealTimeMonitor } from "@/components/real-time-monitor";
 import { WeeklyRetraining } from "@/components/weekly-retraining";
+import { IndustryBenchmarks } from "@/components/industry-benchmarks";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Brain, Activity, Zap } from "lucide-react";
@@ -107,6 +108,11 @@ export default function Dashboard() {
         {/* Weekly Model Retraining */}
         <div className="mb-8">
           <WeeklyRetraining />
+        </div>
+
+        {/* Industry Benchmark Comparison */}
+        <div className="mb-8">
+          <IndustryBenchmarks />
         </div>
       </main>
     </div>

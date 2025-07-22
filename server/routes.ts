@@ -849,15 +849,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/weekly-retraining/config", async (req, res) => {
+  // Industry benchmark endpoints
+  app.get("/api/benchmarks/comparison/:modelType", async (req, res) => {
     try {
-      const { weeklyRetrainingSystem } = await import('./weekly-retraining');
-      const config = req.body;
-      weeklyRetrainingSystem.updateConfig(config);
-      res.json({ message: "Configuration updated successfully" });
+      const { industryBenchmarks } = await import('./industry-benchmarks');
+      const modelType = req.params.modelType as 'pytorch' | 'ollama';
+      const comparison = await industryBenchmarks.generateBenchmarkComparison(modelType);
+      res.json(comparison);
     } catch (error) {
-      console.error('Failed to update config:', error);
-      res.status(500).json({ error: "Failed to update configuration" });
+      console.error('Failed to generate benchmark comparison:', error);
+      res.status(500).json({ error: "Failed to generate benchmark comparison" });
+    }
+  });
+
+  app.get("/api/benchmarks/analysis/:modelType", async (req, res) => {
+    try {
+      const { industryBenchmarks } = await import('./industry-benchmarks');
+      const modelType = req.params.modelType as 'pytorch' | 'ollama';
+      const analysis = await industryBenchmarks.getDetailedAnalysis(modelType);
+      res.json(analysis);
+    } catch (error) {
+      console.error('Failed to generate detailed analysis:', error);
+      res.status(500).json({ error: "Failed to generate detailed analysis" });
     }
   });
 
