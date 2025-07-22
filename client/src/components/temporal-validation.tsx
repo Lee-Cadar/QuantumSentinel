@@ -85,9 +85,7 @@ export function TemporalValidation({ modelType = 'pytorch' }: TemporalValidation
   // Start temporal validation mutation
   const validationMutation = useMutation({
     mutationFn: async (model: string) => {
-      return apiRequest(`/api/temporal-validation/start/${model}`, {
-        method: 'POST'
-      });
+      return apiRequest('POST', `/api/temporal-validation/start/${model}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/temporal-validation/results', modelType] });
