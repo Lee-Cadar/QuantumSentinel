@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Route, MapPin, Clock, AlertTriangle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -90,11 +90,11 @@ export default function RouteOptimization() {
   };
 
   return (
-    <Card className="bg-white rounded-xl shadow-lg mb-8">
-      <CardHeader className="p-6 border-b border-slate-200">
+    <div className="dashboard-card mt-[0px] mb-[0px]">
+      <div className="p-6 border-b border-slate-200">
         <h2 className="text-xl font-bold text-slate-900">Emergency Route Optimization</h2>
-      </CardHeader>
-      <CardContent className="p-6">
+      </div>
+      <div className="p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
             <h4 className="font-semibold text-slate-900 mb-4">Plan Evacuation Route</h4>
@@ -257,7 +257,7 @@ export default function RouteOptimization() {
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
