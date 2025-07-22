@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -30,7 +29,7 @@ export function NewsWidget() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await queryClient.getQueryClient().invalidateQueries({
+      await queryClient.invalidateQueries({
         queryKey: ["/api/news"],
       });
       
@@ -38,7 +37,7 @@ export function NewsWidget() {
       await fetch("/api/news/refresh", { method: "POST" });
       
       // Invalidate news queries to get fresh data
-      await queryClient.getQueryClient().invalidateQueries({
+      await queryClient.invalidateQueries({
         queryKey: ["/api/news"],
       });
     } catch (error) {
@@ -93,12 +92,12 @@ export function NewsWidget() {
   };
 
   return (
-    <Card className="h-full">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+    <div className="dashboard-card h-full">
+      <div className="dashboard-card-header flex flex-row items-center justify-between">
+        <h3 className="dashboard-card-title">
           <AlertTriangle className="h-5 w-5 text-orange-500" />
           Natural Disaster News
-        </CardTitle>
+        </h3>
         <Button
           variant="outline"
           size="sm"
@@ -108,8 +107,8 @@ export function NewsWidget() {
         >
           <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
         </Button>
-      </CardHeader>
-      <CardContent className="p-0">
+      </div>
+      <div className="dashboard-card-content p-0">
         <ScrollArea className="h-[500px] px-4">
           {isLoading ? (
             <div className="space-y-3">
@@ -125,7 +124,7 @@ export function NewsWidget() {
                 </div>
               ))}
             </div>
-          ) : articles.length === 0 ? (
+          ) : (articles as NewsArticle[]).length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="font-medium mb-2">No disaster news available</p>
@@ -133,7 +132,7 @@ export function NewsWidget() {
             </div>
           ) : (
             <div className="space-y-3 pb-4">
-              {articles.map((article: NewsArticle) => (
+              {(articles as NewsArticle[]).map((article: NewsArticle) => (
                 <div
                   key={article.id}
                   className="border rounded-lg p-3 hover:bg-accent/50 transition-colors"
@@ -205,7 +204,7 @@ export function NewsWidget() {
             </div>
           )}
         </ScrollArea>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

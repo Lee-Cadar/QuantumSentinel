@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { RefreshCw, Mountain, Flame, CloudRain, MapPin, Calendar, AlertTriangle } from "lucide-react";
+import { RefreshCw, Mountain, Flame, CloudRain, MapPin, Calendar, AlertTriangle, Activity } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -76,24 +76,25 @@ export default function RecentActivity() {
     .slice(0, 10);
 
   return (
-    <Card className="bg-white rounded-xl shadow-lg">
-      <CardHeader className="px-4 py-2 border-b border-slate-200">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900">Recent Disaster Activity</h2>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refreshMutation.mutate()}
-            disabled={refreshMutation.isPending}
-            className="font-medium text-xs h-7"
-            style={{ color: 'var(--emergency-red)' }}
-          >
-            <RefreshCw className={`h-3 w-3 mr-1 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="p-2">
+    <div className="dashboard-card">
+      <div className="dashboard-card-header flex items-center justify-between py-2">
+        <h2 className="dashboard-card-title text-lg">
+          <Activity className="h-5 w-5 text-blue-500" />
+          Recent Disaster Activity
+        </h2>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refreshMutation.mutate()}
+          disabled={refreshMutation.isPending}
+          className="font-medium text-xs h-7"
+          style={{ color: 'var(--emergency-red)' }}
+        >
+          <RefreshCw className={`h-3 w-3 mr-1 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+      <div className="dashboard-card-content p-2">
         {isLoading ? (
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
@@ -194,7 +195,7 @@ export default function RecentActivity() {
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
