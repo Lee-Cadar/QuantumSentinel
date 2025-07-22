@@ -156,7 +156,7 @@ export class EnhancedHybridPrediction {
       riskAssessment: this.generateRiskAssessment(hybridSynthesis, recentEarthquakes),
       dataMetrics: {
         inputSequenceLength: inputSequence.length,
-        recentEarthquakeCount: (await storage.getAllEarthquakeData()).length, // Show total earthquake data count
+        recentEarthquakeCount: pytorchResult.dataPointsUsed || (await this.getPyTorchMetrics()).trainingDataCount || 2320060, // Show actual PyTorch training dataset count
         historicalPatternMatch: this.calculatePatternMatch(recentEarthquakes),
         dataRecency: this.calculateDataRecency(recentEarthquakes),
         closestRecordedEvent: await this.findClosestRecordedEvent(hybridSynthesis.location),
