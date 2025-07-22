@@ -154,22 +154,22 @@ export default function PredictionPanel() {
                 <div className="flex items-center space-x-2">
                   <span 
                     className="text-xs text-white px-2 py-1 rounded"
-                    style={{ backgroundColor: getConfidenceColor(lastPrediction.confidence) }}
+                    style={{ backgroundColor: getConfidenceColor(lastPrediction.confidence || 0) }}
                   >
-                    {lastPrediction.confidence.toFixed(0)}% Confidence
+                    {(lastPrediction.confidence || 0).toFixed(0)}% Confidence
                   </span>
                   <span 
                     className="text-xs text-white px-2 py-1 rounded capitalize"
-                    style={{ backgroundColor: getRiskColor(lastPrediction.predictedIntensity * 10) }}
+                    style={{ backgroundColor: getRiskColor((lastPrediction.predictedIntensity || lastPrediction.predictedMagnitude || 0) * 10) }}
                   >
-                    {lastPrediction.riskLevel} Risk
+                    {lastPrediction.riskLevel || 'medium'} Risk
                   </span>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-2xl font-bold" style={{ color: 'var(--emergency-red)' }}>
-                    Magnitude {lastPrediction.predictedIntensity.toFixed(1)}
+                    Magnitude {(lastPrediction.predictedIntensity || lastPrediction.predictedMagnitude || 0).toFixed(1)}
                   </p>
                   <p className="text-sm" style={{ color: 'var(--neutral-gray)' }}>
                     Expected in next {lastPrediction.timeframe}
