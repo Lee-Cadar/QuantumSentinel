@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import type { Incident } from "@/../../shared/schema";
 
 export default function IncidentReporting() {
   const [formData, setFormData] = useState({
@@ -24,7 +25,7 @@ export default function IncidentReporting() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: recentIncidents = [] } = useQuery({
+  const { data: recentIncidents = [] } = useQuery<Incident[]>({
     queryKey: ["/api/incidents/recent"],
   });
 
@@ -225,8 +226,8 @@ export default function IncidentReporting() {
           <h4 className="font-semibold text-slate-900 mb-3">Recent Reports</h4>
           <div className="space-y-2">
             {recentIncidents.slice(0, 3).map((incident) => {
-              const StatusIcon = getStatusIcon(incident.verificationStatus);
-              const statusColor = getStatusColor(incident.verificationStatus);
+              const StatusIcon = getStatusIcon(incident.verificationStatus || 'pending');
+              const statusColor = getStatusColor(incident.verificationStatus || 'pending');
               
               return (
                 <div key={incident.id} className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
@@ -236,7 +237,7 @@ export default function IncidentReporting() {
                       {incident.incidentType.charAt(0).toUpperCase() + incident.incidentType.slice(1)} reported in {incident.location}
                     </p>
                     <p className="text-xs" style={{ color: 'var(--neutral-gray)' }}>
-                      {formatTimeAgo(incident.timestamp)} • {incident.verificationStatus}
+                      {formatTimeAgo(typeof incident.timestamp === 'string' ? incident.timestamp : incident.timestamp.toISOString())} • {incident.verificationStatus}
                     </p>
                   </div>
                   <span 

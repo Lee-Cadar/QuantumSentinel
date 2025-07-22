@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Route, MapPin, Clock, AlertTriangle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,9 +43,8 @@ export default function RouteOptimization() {
       
       return apiRequest("POST", "/api/routes/optimize", payload);
     },
-    onSuccess: (response) => {
-      const data = response.json();
-      setRoutes(data);
+    onSuccess: (response: any) => {
+      setRoutes(Array.isArray(response) ? response : []);
       toast({
         title: "Routes Calculated",
         description: "Optimal evacuation routes have been generated.",

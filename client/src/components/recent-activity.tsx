@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { RefreshCw, Mountain, Flame, CloudRain, MapPin, Calendar, AlertTriangle, Activity } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
+import type { Disaster } from "@/../../shared/schema";
 
 export default function RecentActivity() {
   const queryClient = useQueryClient();
 
-  const { data: disasters = [], isLoading } = useQuery({
+  const { data: disasters = [], isLoading } = useQuery<Disaster[]>({
     queryKey: ["/api/disasters"],
   });
 
@@ -121,8 +121,8 @@ export default function RecentActivity() {
                   {recentDisasters.map((disaster) => {
                     const IconComponent = getDisasterIcon(disaster.disasterType);
                     const intensityColor = getIntensityColor(disaster.intensity, disaster.disasterType);
-                    const statusColor = getStatusColor(disaster.verified);
-                    const timeInfo = formatDateTime(disaster.timestamp);
+                    const statusColor = getStatusColor(disaster.verified ?? false);
+                    const timeInfo = formatDateTime(typeof disaster.timestamp === 'string' ? disaster.timestamp : disaster.timestamp.toISOString());
                     
                     return (
                       <tr key={disaster.id} className="hover:bg-slate-50">
