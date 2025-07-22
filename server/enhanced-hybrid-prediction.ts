@@ -648,61 +648,7 @@ export class EnhancedHybridPrediction {
     };
   }
 
-  private async storePrediction(report: HybridPredictionReport) {
-    const insertData: InsertPrediction = {
-      disasterType: 'earthquake',
-      predictedMagnitude: report.prediction.magnitude,
-      confidence: report.prediction.confidence,
-      timeframe: report.prediction.timeframe,
-      location: report.prediction.location,
-      reasoning: `Hybrid prediction combining PyTorch and Ollama models`,
-      riskLevel: report.prediction.riskLevel,
-      keyFactors: report.analysis.hybridSynthesis.keyInsights,
-      recommendedActions: report.riskAssessment.recommendedActions
-    };
 
-    return await storage.addPrediction(insertData);
-  }
-
-  private async storePredictionReport(predictionId: number, report: HybridPredictionReport) {
-    // Store detailed report in predictionReports table
-    // This would be implemented with the storage layer
-    console.log(`Stored detailed prediction report for prediction ${predictionId}`);
-  }
-
-  private async storeTrainingLog(sessionId: string, modelType: string, epoch: number, status: ModelTrainingStatus) {
-    // Store training progress in trainingLogs table
-    console.log(`Training log: ${modelType} session ${sessionId}, epoch ${epoch}`);
-  }
-
-  private async updateModelMetrics(modelType: string, metrics: any) {
-    try {
-      // Store metrics that will be returned by the API
-      const metricsData = {
-        modelType,
-        accuracy: metrics.accuracy,
-        precision: metrics.precision,
-        recall: metrics.recall,
-        f1Score: metrics.f1Score,
-        trainingDataCount: metrics.trainingDataCount,
-        trainingSessions: metrics.trainingSessions,
-        lastUpdated: new Date()
-      };
-      
-      // In a real implementation, this would update the database
-      console.log(`Updated ${modelType} model metrics:`, metricsData);
-      
-      // Store in memory for immediate retrieval
-      if (modelType === 'pytorch') {
-        this.cachedPyTorchMetrics = metricsData;
-      } else if (modelType === 'ollama') {
-        this.cachedOllamaMetrics = metricsData;
-      }
-      
-      return metricsData;
-    } catch (error) {
-      console.error('Failed to update model metrics:', error);
-      return metrics;
     }
   }
 

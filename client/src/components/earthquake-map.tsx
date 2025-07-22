@@ -164,7 +164,6 @@ export default function EarthquakeMap({
       marker.on('click', () => {
         setSelectedLocation(location);
         onLocationSelect?.(location);
-        console.log('Selected earthquake location:', location);
       });
     });
 

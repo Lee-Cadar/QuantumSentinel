@@ -38,10 +38,7 @@ export default function RealTimeEarthquakeMap({ prediction }: RealTimeEarthquake
   // Add predicted location if available
   const predictions = [];
   
-  // Debug logging (remove in production)
-  if (prediction?.analysis?.predictedLocation) {
-    console.log('Predicted Location:', prediction.analysis.predictedLocation);
-  }
+  // Production ready - no debug logging
   
   // Check multiple possible paths for prediction location
   const predictionLocation = prediction?.analysis?.predictedLocation || 
@@ -59,7 +56,7 @@ export default function RealTimeEarthquakeMap({ prediction }: RealTimeEarthquake
       reasoning: `AI Prediction • ${prediction.modelType?.toUpperCase() || 'HYBRID'} Model • ${prediction.prediction?.timeframe || '7-14 days'}`,
       timestamp: new Date().toISOString(),
     });
-    console.log('Added prediction marker:', predictions[0]);
+
   } else {
     // Fallback: create a prediction marker at default location if we have prediction data
     if (prediction?.prediction) {
@@ -73,7 +70,7 @@ export default function RealTimeEarthquakeMap({ prediction }: RealTimeEarthquake
         reasoning: `AI Prediction • ${prediction.modelType?.toUpperCase() || 'HYBRID'} Model • ${prediction.prediction.timeframe || '7-14 days'}`,
         timestamp: new Date().toISOString(),
       });
-      console.log('Added fallback prediction marker for Nepal:', predictions[0]);
+
     }
   }
 
