@@ -1,4 +1,4 @@
-import { disasters, incidents, predictions, alerts, earthquakeData, modelMetrics, newsArticles } from "@shared/schema";
+import { disasters, incidents, predictions, alerts, earthquakeData, modelMetrics, newsArticles, trainingMetrics, trainingGoals, trainingSessions } from "@shared/schema";
 import type { 
   Disaster, InsertDisaster, 
   Incident, InsertIncident, 
@@ -6,7 +6,10 @@ import type {
   Alert, InsertAlert,
   EarthquakeData, InsertEarthquakeData,
   ModelMetrics, InsertModelMetrics,
-  NewsArticle, InsertNewsArticle
+  NewsArticle, InsertNewsArticle,
+  TrainingMetrics, InsertTrainingMetrics,
+  TrainingGoals, InsertTrainingGoals,
+  TrainingSession, InsertTrainingSession
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte } from "drizzle-orm";
@@ -53,6 +56,15 @@ export interface IStorage {
   getNewsArticlesByType(disasterType: string): Promise<NewsArticle[]>;
   getNewsArticleByUrl(url: string): Promise<NewsArticle | undefined>;
   createNewsArticle(article: InsertNewsArticle): Promise<NewsArticle>;
+  
+  // Training persistence methods
+  getTrainingMetrics(modelType: string): Promise<TrainingMetrics | undefined>;
+  updateTrainingMetrics(modelType: string, metrics: Partial<InsertTrainingMetrics>): Promise<TrainingMetrics>;
+  getTrainingGoals(modelType: string): Promise<TrainingGoals | undefined>;
+  saveTrainingGoals(goals: InsertTrainingGoals): Promise<TrainingGoals>;
+  createTrainingSession(session: InsertTrainingSession): Promise<TrainingSession>;
+  updateTrainingSession(sessionId: string, updates: Partial<TrainingSession>): Promise<TrainingSession | undefined>;
+  getTrainingSessions(modelType: string, limit?: number): Promise<TrainingSession[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -218,6 +230,79 @@ export class DatabaseStorage implements IStorage {
       .values(article)
       .returning();
     return newArticle;
+  }
+
+  // Training persistence implementations
+  async getTrainingMetrics(modelType: string): Promise<TrainingMetrics | undefined> {
+    const [metrics] = await db.select().from(trainingMetrics)
+      .where(eq(trainingMetrics.modelType, modelType))
+      .orderBy(desc(trainingMetrics.updatedAt))
+      .limit(1);
+    return metrics;
+  }
+
+  async updateTrainingMetrics(modelType: string, metrics: Partial<InsertTrainingMetrics>): Promise<TrainingMetrics> {
+    const existing = await this.getTrainingMetrics(modelType);
+    
+    if (existing) {
+      const [updated] = await db.update(trainingMetrics)
+        .set({ ...metrics, updatedAt: new Date() })
+        .where(eq(trainingMetrics.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [newMetrics] = await db.insert(trainingMetrics)
+        .values({ modelType, ...metrics })
+        .returning();
+      return newMetrics;
+    }
+  }
+
+  async getTrainingGoals(modelType: string): Promise<TrainingGoals | undefined> {
+    const [goals] = await db.select().from(trainingGoals)
+      .where(eq(trainingGoals.modelType, modelType))
+      .orderBy(desc(trainingGoals.updatedAt))
+      .limit(1);
+    return goals;
+  }
+
+  async saveTrainingGoals(goals: InsertTrainingGoals): Promise<TrainingGoals> {
+    const existing = await this.getTrainingGoals(goals.modelType);
+    
+    if (existing) {
+      const [updated] = await db.update(trainingGoals)
+        .set({ ...goals, updatedAt: new Date() })
+        .where(eq(trainingGoals.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [newGoals] = await db.insert(trainingGoals)
+        .values(goals)
+        .returning();
+      return newGoals;
+    }
+  }
+
+  async createTrainingSession(session: InsertTrainingSession): Promise<TrainingSession> {
+    const [newSession] = await db.insert(trainingSessions)
+      .values(session)
+      .returning();
+    return newSession;
+  }
+
+  async updateTrainingSession(sessionId: string, updates: Partial<TrainingSession>): Promise<TrainingSession | undefined> {
+    const [updated] = await db.update(trainingSessions)
+      .set(updates)
+      .where(eq(trainingSessions.sessionId, sessionId))
+      .returning();
+    return updated;
+  }
+
+  async getTrainingSessions(modelType: string, limit: number = 10): Promise<TrainingSession[]> {
+    return await db.select().from(trainingSessions)
+      .where(eq(trainingSessions.modelType, modelType))
+      .orderBy(desc(trainingSessions.startTime))
+      .limit(limit);
   }
 }
 

@@ -169,6 +169,53 @@ export const insertModelMetricsSchema = createInsertSchema(modelMetrics).omit({
   id: true,
 });
 
+// Training metrics schema
+export const trainingMetrics = pgTable("training_metrics", {
+  id: serial("id").primaryKey(),
+  modelType: text("model_type").notNull(), // 'pytorch' or 'ollama'
+  accuracy: real("accuracy").default(0),
+  precision: real("precision").default(0),
+  recall: real("recall").default(0),
+  confidence: real("confidence").default(0),
+  trainingDataCount: integer("training_data_count").default(0),
+  trainingSessions: integer("training_sessions").default(0),
+  lastTrainedAt: timestamp("last_trained_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+// Training goals schema  
+export const trainingGoals = pgTable("training_goals", {
+  id: serial("id").primaryKey(),
+  modelType: text("model_type").notNull(),
+  targetAccuracy: real("target_accuracy").notNull(),
+  targetDataPoints: integer("target_data_points").notNull(),
+  maxSessions: integer("max_sessions").default(10),
+  trainingInterval: text("training_interval").default('daily'),
+  isEnabled: boolean("is_enabled").default(false),
+  currentProgress: real("current_progress").default(0),
+  isCompleted: boolean("is_completed").default(false),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+// Training sessions log
+export const trainingSessions = pgTable("training_sessions", {
+  id: serial("id").primaryKey(),
+  modelType: text("model_type").notNull(),
+  sessionId: text("session_id").notNull().unique(),
+  startTime: timestamp("start_time").defaultNow(),
+  endTime: timestamp("end_time"),
+  dataPointsProcessed: integer("data_points_processed").default(0),
+  initialAccuracy: real("initial_accuracy").default(0),
+  finalAccuracy: real("final_accuracy").default(0),
+  improvementRate: real("improvement_rate").default(0),
+  status: text("status").default('running'), // 'running', 'completed', 'failed'
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow()
+});
+
 export const newsArticles = pgTable("news_articles", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -189,9 +236,33 @@ export const insertNewsArticleSchema = createInsertSchema(newsArticles).omit({
   id: true,
 });
 
+// Training schemas
+export const insertTrainingMetricsSchema = createInsertSchema(trainingMetrics).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertTrainingGoalsSchema = createInsertSchema(trainingGoals).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertTrainingSessionSchema = createInsertSchema(trainingSessions).omit({
+  id: true,
+  createdAt: true
+});
+
 export type EarthquakeData = typeof earthquakeData.$inferSelect;
 export type InsertEarthquakeData = z.infer<typeof insertEarthquakeDataSchema>;
 export type ModelMetrics = typeof modelMetrics.$inferSelect;
 export type InsertModelMetrics = z.infer<typeof insertModelMetricsSchema>;
 export type NewsArticle = typeof newsArticles.$inferSelect;
 export type InsertNewsArticle = z.infer<typeof insertNewsArticleSchema>;
+export type TrainingMetrics = typeof trainingMetrics.$inferSelect;
+export type InsertTrainingMetrics = z.infer<typeof insertTrainingMetricsSchema>;
+export type TrainingGoals = typeof trainingGoals.$inferSelect;
+export type InsertTrainingGoals = z.infer<typeof insertTrainingGoalsSchema>;
+export type TrainingSession = typeof trainingSessions.$inferSelect;
+export type InsertTrainingSession = z.infer<typeof insertTrainingSessionSchema>;
