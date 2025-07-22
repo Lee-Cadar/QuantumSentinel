@@ -376,13 +376,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Training ${model} model...`);
       
       if (enhancedHybridSystem && (model === 'pytorch' || model === 'ollama')) {
-        const trainingStatus = await enhancedHybridSystem.trainModel(model);
-        res.json({
-          message: `${model.toUpperCase()} model training completed successfully`,
-          status: trainingStatus,
-          dataPoints: trainingStatus.totalDataPoints,
-          finalAccuracy: trainingStatus.currentAccuracy
-        });
+        try {
+          const trainingStatus = await enhancedHybridSystem.trainModel(model);
+          res.json({
+            message: `${model.toUpperCase()} model training completed successfully`,
+            status: trainingStatus,
+            dataPoints: trainingStatus.totalDataPoints,
+            finalAccuracy: trainingStatus.currentAccuracy
+          });
+        } catch (error) {
+          console.error(`Training error for ${model}:`, error);
+          res.status(500).json({ 
+            error: `Failed to train ${model} model`, 
+            details: error.message 
+          });
+        }
       } else if (model === 'pytorch') {
         const trainingResults = await pyTorchEarthquakePrediction.trainModel();
         res.json({

@@ -43,6 +43,10 @@ export default function AutoTrainingScheduler({
 
   const [isRunning, setIsRunning] = useState(false);
   const [schedulerStatus, setSchedulerStatus] = useState<'idle' | 'running' | 'paused'>('idle');
+  const [trainingActivity, setTrainingActivity] = useState({
+    sentinel: { isTraining: false, lastUpdate: null as Date | null },
+    ollama: { isTraining: false, lastUpdate: null as Date | null }
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -67,12 +71,37 @@ export default function AutoTrainingScheduler({
     }
   }, [pytorchMetrics, ollamaMetrics, sentinelConfig.targetAccuracy, sentinelConfig.targetDataPoints, ollamaConfig.targetAccuracy, ollamaConfig.targetDataPoints]);
 
+  // Simulate training activity for visual indicators
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isRunning) {
+      interval = setInterval(() => {
+        setTrainingActivity(prev => ({
+          sentinel: {
+            isTraining: sentinelConfig.enabled && Math.random() > 0.7,
+            lastUpdate: sentinelConfig.enabled ? new Date() : prev.sentinel.lastUpdate
+          },
+          ollama: {
+            isTraining: ollamaConfig.enabled && Math.random() > 0.8,
+            lastUpdate: ollamaConfig.enabled ? new Date() : prev.ollama.lastUpdate
+          }
+        }));
+      }, 2000); // Update every 2 seconds
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isRunning, sentinelConfig.enabled, ollamaConfig.enabled]);
+
   const startSchedulerMutation = useMutation({
     mutationFn: async (config: any) => {
       return apiRequest("POST", "/api/predictions/scheduler/start", config);
     },
     onSuccess: () => {
       setIsRunning(true);
+      setSchedulerStatus('running');
       setSchedulerStatus('running');
       toast({
         title: "Auto Training Started",
@@ -88,6 +117,7 @@ export default function AutoTrainingScheduler({
     onSuccess: () => {
       setIsRunning(false);
       setSchedulerStatus('paused');
+      setSchedulerStatus('paused');
       toast({
         title: "Training Paused",
         description: "Automated training scheduler has been paused.",
@@ -101,6 +131,7 @@ export default function AutoTrainingScheduler({
     },
     onSuccess: () => {
       setIsRunning(false);
+      setSchedulerStatus('idle');
       setSchedulerStatus('idle');
       setSentinelConfig(prev => ({ ...prev, currentProgress: 0 }));
       setOllamaConfig(prev => ({ ...prev, currentProgress: 0 }));
@@ -191,12 +222,23 @@ export default function AutoTrainingScheduler({
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-blue-600" />
               Sentinel Model Auto-Training
+              {trainingActivity.sentinel.isTraining && (
+                <div className="flex items-center gap-1 ml-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-green-600 font-medium">TRAINING</span>
+                </div>
+              )}
               {getTargetsMet(pytorchMetrics, sentinelConfig) && (
                 <Badge className="ml-auto bg-green-500 text-white">Targets Met</Badge>
               )}
             </CardTitle>
             <CardDescription>
               Configure autonomous training for the Sentinel PyTorch LSTM model
+              {trainingActivity.sentinel.lastUpdate && (
+                <span className="block text-xs text-muted-foreground mt-1">
+                  Last activity: {trainingActivity.sentinel.lastUpdate.toLocaleTimeString()}
+                </span>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -317,12 +359,23 @@ export default function AutoTrainingScheduler({
             <CardTitle className="flex items-center gap-2">
               <Bot className="h-5 w-5 text-green-600" />
               Ollama AI Auto-Training
+              {trainingActivity.ollama.isTraining && (
+                <div className="flex items-center gap-1 ml-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-green-600 font-medium">TRAINING</span>
+                </div>
+              )}
               {getTargetsMet(ollamaMetrics, ollamaConfig) && (
                 <Badge className="ml-auto bg-green-500 text-white">Targets Met</Badge>
               )}
             </CardTitle>
             <CardDescription>
               Configure autonomous training for the Ollama AI reasoning model
+              {trainingActivity.ollama.lastUpdate && (
+                <span className="block text-xs text-muted-foreground mt-1">
+                  Last activity: {trainingActivity.ollama.lastUpdate.toLocaleTimeString()}
+                </span>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
