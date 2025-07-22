@@ -1,0 +1,86 @@
+# Enhanced train_model() - Drop into your Quantum Sentinel script
+import torch.nn.functional as F  # Add if needed
+
+def train_model(prompt="Relentlessly train the earthquake LSTM model on the full USGS ComCat dataset, with ironclad focus on post-2020 events as the validation core. Force iterative learning: Dynamically adjust class weights to penalize false negatives heavily, extend epochs in batches of 10 until recall exceeds 95% on post-2020 holdout data (compute as True Positives / (True Positives + False Negatives) across magnitude bins). Output binned magnitudes (<4 minor, 4-5 light, 5-6 moderate, 6-7 strong, 7+ major) with per-prediction confidence scores. Halt only when recall >95%—log interim metrics (accuracy, precision, recall) after each batch. Prioritize global patterns but overweight post-2020 quakes for chained hazard relevance."):
+    print(f"Executing mastered directive: {prompt}")
+    
+    # Load Existing Model (No Fresh Start)
+    try:
+        model.load_state_dict(torch.load('quake_model.pth'))
+        print("Loaded existing weights—iterating from strength.")
+    except FileNotFoundError:
+        print("No prior model—initializing from scratch.")
+    
+    # Data Load & Overweight Post-2020
+    df = pd.read_sql("SELECT * FROM quakes ORDER BY time", conn)
+    df['time'] = pd.to_datetime(df['time'])
+    df_post2020 = df[df['time'] >= '2020-01-01']
+    df_pre2020 = df[df['time'] < '2020-01-01'].sample(frac=0.8, random_state=42)
+    df = pd.concat([df_pre2020, df_post2020])  # Overweight
+    
+    scaler = MinMaxScaler()
+    df['mag_scaled'] = scaler.fit_transform(df['mag'].values.reshape(-1, 1))
+    bins = [0, 4, 5, 6, 7, np.inf]
+    labels = [0, 1, 2, 3, 4]
+    df['mag_bin'] = pd.cut(df['mag'], bins=bins, labels=labels, include_lowest=True).cat.codes
+    
+    # Seq Creation
+    seq_len = 10
+    X, y = [], []
+    for i in range(len(df) - seq_len):
+        X.append(df['mag_scaled'].values[i:i+seq_len])
+        y.append(df['mag_bin'].values[i+seq_len])
+    X = np.array(X).reshape(-1, seq_len, 1)
+    y = np.array(y)
+    
+    class QuakeDataset(Dataset):
+        def __init__(self, X, y):
+            self.X = torch.tensor(X, dtype=torch.float32)
+            self.y = torch.tensor(y, dtype=torch.long)
+        def __len__(self): return len(self.X)
+        def __getitem__(self, idx): return self.X[idx], self.y[idx]
+    
+    dataset = QuakeDataset(X, y)
+    loader = DataLoader(dataset, batch_size=64, shuffle=True)
+    
+    # Dynamic Class Weights (Heavy FN Penalty)
+    class_counts = np.bincount(y)
+    class_weights = 1. / (class_counts + 1e-6)
+    class_weights = class_weights * np.array([2.0 if label > 2 else 1.5 for label in range(5)])  # Amp for majors/FN
+    class_weights = torch.tensor(class_weights / class_weights.sum(), dtype=torch.float32)
+    criterion = nn.CrossEntropyLoss(weight=class_weights)
+    
+    # Holdout Eval (Post-2020 Core)
+    holdout_idx = np.where(df['time'].values[seq_len:] >= np.datetime64('2020-01-01'))[0]
+    X_hold, y_hold = X[holdout_idx], y[holdout_idx]
+    hold_dataset = QuakeDataset(X_hold, y_hold)
+    hold_loader = DataLoader(hold_dataset, batch_size=64)
+    
+    recall = 0.0
+    epoch_batch = 0
+    while recall < 0.95:
+        for _ in range(10):  # Batch epochs
+            for inputs, targets in loader:
+                optimizer.zero_grad()
+                outputs = model(inputs)
+                loss = criterion(outputs, targets)
+                loss.backward()
+                optimizer.step()
+        
+        # Eval & Log
+        preds, actuals = [], []
+        model.eval()
+        with torch.no_grad():
+            for inputs, targets in hold_loader:
+                outputs = model(inputs)
+                preds.extend(torch.argmax(outputs, dim=1).cpu().numpy())
+                actuals.extend(targets.cpu().numpy())
+        acc = accuracy_score(actuals, preds)
+        prec = precision_score(actuals, preds, average='weighted', zero_division=0)
+        recall = recall_score(actuals, preds, average='weighted', zero_division=0)
+        print(f"Batch {epoch_batch}: Acc {acc*100:.1f}%, Prec {prec*100:.1f}%, Recall {recall*100:.1f}%")
+        model.train()
+        epoch_batch += 1
+        torch.save(model.state_dict(), 'quake_model.pth')  # Incremental save
+    
+    print("Recall siege won—model evolved for correlations.")

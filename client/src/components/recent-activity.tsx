@@ -50,8 +50,8 @@ export default function RecentActivity() {
     return verified ? "var(--safe-green)" : "var(--warning-orange)";
   };
 
-  const formatDateTime = (timestamp: string) => {
-    const date = new Date(timestamp);
+  const formatDateTime = (timestamp: string | Date) => {
+    const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
     return {
       date: date.toLocaleDateString(),
       time: date.toLocaleTimeString(),
@@ -122,7 +122,7 @@ export default function RecentActivity() {
                     const IconComponent = getDisasterIcon(disaster.disasterType);
                     const intensityColor = getIntensityColor(disaster.intensity, disaster.disasterType);
                     const statusColor = getStatusColor(disaster.verified ?? false);
-                    const timeInfo = formatDateTime(typeof disaster.timestamp === 'string' ? disaster.timestamp : disaster.timestamp.toISOString());
+                    const timeInfo = formatDateTime(disaster.timestamp);
                     
                     return (
                       <tr key={disaster.id} className="hover:bg-slate-50">

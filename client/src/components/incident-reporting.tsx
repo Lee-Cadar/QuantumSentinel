@@ -97,9 +97,9 @@ export default function IncidentReporting() {
     }
   };
 
-  const formatTimeAgo = (timestamp: string) => {
+  const formatTimeAgo = (timestamp: string | Date) => {
     const now = new Date();
-    const incidentTime = new Date(timestamp);
+    const incidentTime = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
     const diffInMinutes = Math.floor((now.getTime() - incidentTime.getTime()) / (1000 * 60));
     
     if (diffInMinutes < 1) return "Just now";
@@ -237,7 +237,7 @@ export default function IncidentReporting() {
                       {incident.incidentType.charAt(0).toUpperCase() + incident.incidentType.slice(1)} reported in {incident.location}
                     </p>
                     <p className="text-xs" style={{ color: 'var(--neutral-gray)' }}>
-                      {formatTimeAgo(typeof incident.timestamp === 'string' ? incident.timestamp : incident.timestamp.toISOString())} • {incident.verificationStatus}
+                      {formatTimeAgo(incident.timestamp)} • {incident.verificationStatus}
                     </p>
                   </div>
                   <span 
