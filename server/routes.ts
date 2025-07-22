@@ -726,6 +726,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Real-time monitoring endpoints
+  app.post("/api/real-time/start", async (req, res) => {
+    try {
+      const { realTimeMonitor } = await import('./real-time-feeds');
+      await realTimeMonitor.startMonitoring();
+      
+      res.json({
+        message: "Real-time seismic monitoring started",
+        status: "active",
+        feeds: realTimeMonitor.getMonitoringStatus().feedCount
+      });
+    } catch (error) {
+      console.error('Failed to start real-time monitoring:', error);
+      res.status(500).json({ error: "Failed to start monitoring" });
+    }
+  });
+
+  app.post("/api/real-time/stop", async (req, res) => {
+    try {
+      const { realTimeMonitor } = await import('./real-time-feeds');
+      await realTimeMonitor.stopMonitoring();
+      
+      res.json({
+        message: "Real-time seismic monitoring stopped",
+        status: "stopped"
+      });
+    } catch (error) {
+      console.error('Failed to stop real-time monitoring:', error);
+      res.status(500).json({ error: "Failed to stop monitoring" });
+    }
+  });
+
+  app.get("/api/real-time/monitoring-status", async (req, res) => {
+    try {
+      const { realTimeMonitor } = await import('./real-time-feeds');
+      const status = realTimeMonitor.getMonitoringStatus();
+      res.json(status);
+    } catch (error) {
+      console.error('Failed to get monitoring status:', error);
+      res.status(500).json({ error: "Failed to get status" });
+    }
+  });
+
+  app.get("/api/real-time/feed-status", async (req, res) => {
+    try {
+      const { realTimeMonitor } = await import('./real-time-feeds');
+      const feedStatus = await realTimeMonitor.getFeedStatus();
+      res.json(feedStatus);
+    } catch (error) {
+      console.error('Failed to get feed status:', error);
+      res.status(500).json({ error: "Failed to get feed status" });
+    }
+  });
+
+  app.get("/api/real-time/recent-events", async (req, res) => {
+    try {
+      const { realTimeMonitor } = await import('./real-time-feeds');
+      const hours = parseInt(req.query.hours as string) || 24;
+      const events = await realTimeMonitor.getRecentEvents(hours);
+      res.json(events);
+    } catch (error) {
+      console.error('Failed to get recent events:', error);
+      res.status(500).json({ error: "Failed to get recent events" });
+    }
+  });
+
+  app.get("/api/real-time/cascadia-activity", async (req, res) => {
+    try {
+      const { realTimeMonitor } = await import('./real-time-feeds');
+      const activity = await realTimeMonitor.getCascadiaActivity();
+      res.json(activity);
+    } catch (error) {
+      console.error('Failed to get Cascadia activity:', error);
+      res.status(500).json({ error: "Failed to get Cascadia activity" });
+    }
+  });
+
+  app.get("/api/real-time/anomalies", async (req, res) => {
+    try {
+      const { realTimeMonitor } = await import('./real-time-feeds');
+      const anomalies = await realTimeMonitor.detectAnomalies();
+      res.json(anomalies);
+    } catch (error) {
+      console.error('Failed to detect anomalies:', error);
+      res.status(500).json({ error: "Failed to detect anomalies" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
