@@ -118,8 +118,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Disasters
   app.get("/api/disasters", async (req, res) => {
     try {
+      // Get both disasters and earthquake data for comprehensive view
       const disasters = await storage.getDisasters();
-      res.json(disasters);
+      const earthquakeData = await storage.getEarthquakeData();
+      
+      // Convert earthquake data to disaster format for visualization
+      const earthquakeDisasters = earthquakeData.slice(0, 50).map(eq => ({
+        id: eq.id || 0,
+        disasterType: 'earthquake' as const,
+        intensity: eq.magnitude,
+        location: eq.location,
+        latitude: eq.latitude,
+        longitude: eq.longitude,
+        timestamp: eq.timestamp,
+        verified: true,
+        source: eq.source || 'USGS'
+      }));
+      
+      const combinedData = [...disasters, ...earthquakeDisasters];
+      res.json(combinedData);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch disasters" });
     }
@@ -128,8 +145,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/disasters/:type", async (req, res) => {
     try {
       const { type } = req.params;
-      const disasters = await storage.getDisastersByType(type);
-      res.json(disasters);
+      
+      if (type === 'earthquake') {
+        // For earthquakes, return real USGS data from database
+        const earthquakeData = await storage.getEarthquakeData();
+        const earthquakeDisasters = earthquakeData.slice(0, 100).map(eq => ({
+          id: eq.id || 0,
+          disasterType: 'earthquake' as const,
+          intensity: eq.magnitude,
+          location: eq.location,
+          latitude: eq.latitude,
+          longitude: eq.longitude,
+          timestamp: eq.timestamp,
+          verified: true,
+          source: eq.source || 'USGS'
+        }));
+        res.json(earthquakeDisasters);
+      } else {
+        // For other disaster types, use regular disasters table
+        const disasters = await storage.getDisastersByType(type);
+        res.json(disasters);
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch disasters by type" });
     }

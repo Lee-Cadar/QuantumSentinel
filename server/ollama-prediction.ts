@@ -1,4 +1,5 @@
 import { Ollama } from 'ollama';
+import { storage } from './storage';
 
 interface EarthquakeData {
   magnitude: number;
@@ -47,6 +48,17 @@ export class OllamaEarthquakePrediction {
     try {
       console.log('Fetching earthquake data from USGS API...');
       
+      // First, try to get cached data from database
+      try {
+        const cachedData = await storage.getEarthquakeData();
+        if (cachedData.length > 100) {
+          console.log(`Using ${cachedData.length} cached earthquake records from database`);
+          return cachedData;
+        }
+      } catch (dbError) {
+        console.log('Database unavailable, fetching fresh data');
+      }
+      
       // Fetch from USGS - last 30 days of significant earthquakes
       const usgsResponse = await fetch(
         'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=2024-06-20&endtime=2025-01-21&minmagnitude=4.0&limit=1000'
@@ -59,7 +71,7 @@ export class OllamaEarthquakePrediction {
       const usgsData = await usgsResponse.json();
       console.log(`Source 1 loaded: ${usgsData.features.length} earthquakes`);
 
-      // Transform USGS data
+      // Transform and store USGS data
       const earthquakeData: EarthquakeData[] = usgsData.features.map((feature: any) => ({
         magnitude: feature.properties.mag,
         location: feature.properties.place,
@@ -68,6 +80,24 @@ export class OllamaEarthquakePrediction {
         latitude: feature.geometry.coordinates[1],
         longitude: feature.geometry.coordinates[0],
       }));
+
+      // Store real earthquake data in database
+      try {
+        if (storage && storage.bulkCreateEarthquakeData) {
+          await storage.bulkCreateEarthquakeData(earthquakeData.map(eq => ({
+            magnitude: eq.magnitude,
+            location: eq.location,
+            depth: eq.depth,
+            latitude: eq.latitude,
+            longitude: eq.longitude,
+            timestamp: new Date(eq.timestamp),
+            source: 'USGS'
+          })));
+          console.log(`Stored ${earthquakeData.length} earthquake records in database`);
+        }
+      } catch (dbError) {
+        console.log('Database storage failed, using in-memory data');
+      }
 
       // Add synthetic historical data for better analysis
       const historicalData = this.generateHistoricalData(500);
@@ -79,8 +109,13 @@ export class OllamaEarthquakePrediction {
       return combinedData;
     } catch (error) {
       console.error('Error fetching earthquake data:', error);
-      // Return sample data for demonstration
-      return this.generateHistoricalData(100);
+      // Return cached data if available, otherwise sample data
+      try {
+        const cachedData = storage ? await storage.getEarthquakeData() : [];
+        return cachedData.length > 0 ? cachedData : this.generateHistoricalData(100);
+      } catch {
+        return this.generateHistoricalData(100);
+      }
     }
   }
 

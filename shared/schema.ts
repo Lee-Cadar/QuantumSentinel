@@ -1,4 +1,5 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, real, jsonb } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -31,10 +32,15 @@ export const incidents = pgTable("incidents", {
 export const predictions = pgTable("predictions", {
   id: serial("id").primaryKey(),
   disasterType: text("disaster_type").notNull(),
-  predictedIntensity: real("predicted_intensity").notNull(),
+  predictedIntensity: real("predicted_intensity"),
+  predictedMagnitude: real("predicted_magnitude"),
   confidence: real("confidence").notNull(),
   timeframe: text("timeframe").notNull(),
   location: text("location"),
+  reasoning: text("reasoning"),
+  riskLevel: text("risk_level"),
+  keyFactors: jsonb("key_factors"),
+  recommendedActions: jsonb("recommended_actions"),
   timestamp: timestamp("timestamp").notNull(),
 });
 
@@ -79,3 +85,56 @@ export type Prediction = typeof predictions.$inferSelect;
 export type InsertPrediction = z.infer<typeof insertPredictionSchema>;
 export type Alert = typeof alerts.$inferSelect;
 export type InsertAlert = z.infer<typeof insertAlertSchema>;
+
+// Add earthquake data table for comprehensive seismic tracking
+export const earthquakeData = pgTable("earthquake_data", {
+  id: serial("id").primaryKey(),
+  magnitude: real("magnitude").notNull(),
+  location: text("location").notNull(),
+  depth: real("depth").notNull(),
+  latitude: real("latitude").notNull(),
+  longitude: real("longitude").notNull(),
+  timestamp: timestamp("timestamp").notNull(),
+  source: text("source").default("USGS"),
+});
+
+// Add AI model metrics tracking
+export const modelMetrics = pgTable("model_metrics", {
+  id: serial("id").primaryKey(),
+  accuracy: real("accuracy").notNull(),
+  precision: real("precision").notNull(),
+  recall: real("recall").notNull(),
+  totalPredictions: integer("total_predictions").default(0),
+  lastUpdated: timestamp("last_updated").notNull(),
+  modelType: text("model_type").default("ollama"),
+});
+
+// Define relations
+export const disastersRelations = relations(disasters, ({ many }) => ({
+  relatedPredictions: many(predictions),
+}));
+
+export const predictionsRelations = relations(predictions, ({ one }) => ({
+  relatedDisaster: one(disasters, {
+    fields: [predictions.location],
+    references: [disasters.location],
+  }),
+}));
+
+export const earthquakeDataRelations = relations(earthquakeData, ({ many }) => ({
+  predictions: many(predictions),
+}));
+
+// Export schemas for new tables
+export const insertEarthquakeDataSchema = createInsertSchema(earthquakeData).omit({
+  id: true,
+});
+
+export const insertModelMetricsSchema = createInsertSchema(modelMetrics).omit({
+  id: true,
+});
+
+export type EarthquakeData = typeof earthquakeData.$inferSelect;
+export type InsertEarthquakeData = z.infer<typeof insertEarthquakeDataSchema>;
+export type ModelMetrics = typeof modelMetrics.$inferSelect;
+export type InsertModelMetrics = z.infer<typeof insertModelMetricsSchema>;

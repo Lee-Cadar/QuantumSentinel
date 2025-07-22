@@ -1,178 +1,165 @@
-import { 
-  disasters, 
-  incidents, 
-  predictions, 
-  alerts,
-  type Disaster, 
-  type InsertDisaster,
-  type Incident,
-  type InsertIncident,
-  type Prediction,
-  type InsertPrediction,
-  type Alert,
-  type InsertAlert
+import { disasters, incidents, predictions, alerts, earthquakeData, modelMetrics } from "@shared/schema";
+import type { 
+  Disaster, InsertDisaster, 
+  Incident, InsertIncident, 
+  Prediction, InsertPrediction, 
+  Alert, InsertAlert,
+  EarthquakeData, InsertEarthquakeData,
+  ModelMetrics, InsertModelMetrics
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc, and, gte } from "drizzle-orm";
 
 export interface IStorage {
   // Disasters
-  getDisasters(): Promise<Disaster[]>;
+  getDisasters(type?: string): Promise<Disaster[]>;
   getDisastersByType(type: string): Promise<Disaster[]>;
   createDisaster(disaster: InsertDisaster): Promise<Disaster>;
   
-  // Incidents
+  // Incidents  
   getIncidents(): Promise<Incident[]>;
-  getRecentIncidents(limit: number): Promise<Incident[]>;
+  getRecentIncidents(limit?: number): Promise<Incident[]>;
   createIncident(incident: InsertIncident): Promise<Incident>;
-  updateIncidentVerification(id: number, verified: boolean, status: string): Promise<Incident>;
+  updateIncidentVerification(id: number, verified: boolean, status: string): Promise<void>;
   
   // Predictions
   getPredictions(): Promise<Prediction[]>;
-  getPredictionsByType(type: string): Promise<Prediction[]>;
   createPrediction(prediction: InsertPrediction): Promise<Prediction>;
   
   // Alerts
+  getAlerts(): Promise<Alert[]>;
   getActiveAlerts(): Promise<Alert[]>;
   createAlert(alert: InsertAlert): Promise<Alert>;
   dismissAlert(id: number): Promise<void>;
+  
+  // Earthquake Data
+  getEarthquakeData(): Promise<EarthquakeData[]>;
+  createEarthquakeData(data: InsertEarthquakeData): Promise<EarthquakeData>;
+  bulkCreateEarthquakeData(data: InsertEarthquakeData[]): Promise<EarthquakeData[]>;
+  
+  // Model Metrics
+  getLatestModelMetrics(): Promise<ModelMetrics | undefined>;
+  updateModelMetrics(metrics: InsertModelMetrics): Promise<ModelMetrics>;
 }
 
-export class MemStorage implements IStorage {
-  private disasters: Map<number, Disaster>;
-  private incidents: Map<number, Incident>;
-  private predictions: Map<number, Prediction>;
-  private alerts: Map<number, Alert>;
-  private currentDisasterId: number;
-  private currentIncidentId: number;
-  private currentPredictionId: number;
-  private currentAlertId: number;
-
-  constructor() {
-    this.disasters = new Map();
-    this.incidents = new Map();
-    this.predictions = new Map();
-    this.alerts = new Map();
-    this.currentDisasterId = 1;
-    this.currentIncidentId = 1;
-    this.currentPredictionId = 1;
-    this.currentAlertId = 1;
-    
-    // Initialize with some sample data for demonstration
-    this.initializeSampleData();
-  }
-
-  private initializeSampleData() {
-    // Add a few sample disasters for testing
-    const sampleDisasters: InsertDisaster[] = [
-      {
-        disasterType: "earthquake",
-        location: "San Francisco, CA",
-        latitude: 37.7749,
-        longitude: -122.4194,
-        intensity: 5.2,
-        description: "Magnitude 5.2 earthquake detected",
-        source: "USGS",
-        verified: true
-      }
-    ];
-
-    sampleDisasters.forEach(disaster => {
-      this.createDisaster(disaster);
-    });
-  }
-
-  async getDisasters(): Promise<Disaster[]> {
-    return Array.from(this.disasters.values());
+export class DatabaseStorage implements IStorage {
+  async getDisasters(type?: string): Promise<Disaster[]> {
+    if (type) {
+      return await db.select().from(disasters).where(eq(disasters.disasterType, type)).orderBy(desc(disasters.timestamp));
+    }
+    return await db.select().from(disasters).orderBy(desc(disasters.timestamp));
   }
 
   async getDisastersByType(type: string): Promise<Disaster[]> {
-    return Array.from(this.disasters.values()).filter(d => d.disasterType === type);
+    return await db.select().from(disasters).where(eq(disasters.disasterType, type)).orderBy(desc(disasters.timestamp));
   }
 
-  async createDisaster(insertDisaster: InsertDisaster): Promise<Disaster> {
-    const id = this.currentDisasterId++;
-    const disaster: Disaster = {
-      ...insertDisaster,
-      id,
-      timestamp: new Date(),
-    };
-    this.disasters.set(id, disaster);
-    return disaster;
+  async createDisaster(disaster: InsertDisaster): Promise<Disaster> {
+    const [newDisaster] = await db
+      .insert(disasters)
+      .values({ ...disaster, timestamp: new Date() })
+      .returning();
+    return newDisaster;
   }
 
   async getIncidents(): Promise<Incident[]> {
-    return Array.from(this.incidents.values());
+    return await db.select().from(incidents).orderBy(desc(incidents.timestamp));
   }
 
-  async getRecentIncidents(limit: number): Promise<Incident[]> {
-    return Array.from(this.incidents.values())
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, limit);
+  async getRecentIncidents(limit: number = 10): Promise<Incident[]> {
+    return await db.select().from(incidents).orderBy(desc(incidents.timestamp)).limit(limit);
   }
 
-  async createIncident(insertIncident: InsertIncident): Promise<Incident> {
-    const id = this.currentIncidentId++;
-    const incident: Incident = {
-      ...insertIncident,
-      id,
-      timestamp: new Date(),
-      verified: false,
-      verificationStatus: "pending",
-    };
-    this.incidents.set(id, incident);
-    return incident;
+  async createIncident(incident: InsertIncident): Promise<Incident> {
+    const [newIncident] = await db
+      .insert(incidents)
+      .values({ ...incident, timestamp: new Date() })
+      .returning();
+    return newIncident;
   }
 
-  async updateIncidentVerification(id: number, verified: boolean, status: string): Promise<Incident> {
-    const incident = this.incidents.get(id);
-    if (!incident) {
-      throw new Error("Incident not found");
-    }
-    const updatedIncident = { ...incident, verified, verificationStatus: status };
-    this.incidents.set(id, updatedIncident);
-    return updatedIncident;
+  async updateIncidentVerification(id: number, verified: boolean, status: string): Promise<void> {
+    await db.update(incidents)
+      .set({ verified, verificationStatus: status })
+      .where(eq(incidents.id, id));
   }
 
   async getPredictions(): Promise<Prediction[]> {
-    return Array.from(this.predictions.values());
+    return await db.select().from(predictions).orderBy(desc(predictions.timestamp));
   }
 
-  async getPredictionsByType(type: string): Promise<Prediction[]> {
-    return Array.from(this.predictions.values()).filter(p => p.disasterType === type);
+  async createPrediction(prediction: InsertPrediction): Promise<Prediction> {
+    const [newPrediction] = await db
+      .insert(predictions)
+      .values({ ...prediction, timestamp: new Date() })
+      .returning();
+    return newPrediction;
   }
 
-  async createPrediction(insertPrediction: InsertPrediction): Promise<Prediction> {
-    const id = this.currentPredictionId++;
-    const prediction: Prediction = {
-      ...insertPrediction,
-      id,
-      timestamp: new Date(),
-    };
-    this.predictions.set(id, prediction);
-    return prediction;
+  async getAlerts(): Promise<Alert[]> {
+    return await db.select().from(alerts).where(eq(alerts.active, true)).orderBy(desc(alerts.timestamp));
   }
 
   async getActiveAlerts(): Promise<Alert[]> {
-    return Array.from(this.alerts.values()).filter(a => a.active);
+    return await db.select().from(alerts).where(eq(alerts.active, true)).orderBy(desc(alerts.timestamp));
   }
 
-  async createAlert(insertAlert: InsertAlert): Promise<Alert> {
-    const id = this.currentAlertId++;
-    const alert: Alert = {
-      ...insertAlert,
-      id,
-      timestamp: new Date(),
-      active: true,
-    };
-    this.alerts.set(id, alert);
-    return alert;
+  async createAlert(alert: InsertAlert): Promise<Alert> {
+    const [newAlert] = await db
+      .insert(alerts)
+      .values({ ...alert, timestamp: new Date() })
+      .returning();
+    return newAlert;
   }
 
   async dismissAlert(id: number): Promise<void> {
-    const alert = this.alerts.get(id);
-    if (alert) {
-      this.alerts.set(id, { ...alert, active: false });
-    }
+    await db.update(alerts).set({ active: false }).where(eq(alerts.id, id));
+  }
+
+  async getEarthquakeData(): Promise<EarthquakeData[]> {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    return await db
+      .select()
+      .from(earthquakeData)
+      .where(gte(earthquakeData.timestamp, thirtyDaysAgo))
+      .orderBy(desc(earthquakeData.timestamp));
+  }
+
+  async createEarthquakeData(data: InsertEarthquakeData): Promise<EarthquakeData> {
+    const [newData] = await db
+      .insert(earthquakeData)
+      .values(data)
+      .returning();
+    return newData;
+  }
+
+  async bulkCreateEarthquakeData(data: InsertEarthquakeData[]): Promise<EarthquakeData[]> {
+    if (data.length === 0) return [];
+    
+    return await db
+      .insert(earthquakeData)
+      .values(data)
+      .returning();
+  }
+
+  async getLatestModelMetrics(): Promise<ModelMetrics | undefined> {
+    const [metrics] = await db
+      .select()
+      .from(modelMetrics)
+      .orderBy(desc(modelMetrics.lastUpdated))
+      .limit(1);
+    return metrics;
+  }
+
+  async updateModelMetrics(metrics: InsertModelMetrics): Promise<ModelMetrics> {
+    const [updatedMetrics] = await db
+      .insert(modelMetrics)
+      .values({ ...metrics, lastUpdated: new Date() })
+      .returning();
+    return updatedMetrics;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

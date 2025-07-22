@@ -2,11 +2,19 @@
 
 ## Overview
 
-AXIOM Sentinel is a comprehensive emergency management platform that combines real-time disaster monitoring, AI-powered predictions, incident reporting, and route optimization. The system uses modern web technologies to provide a unified dashboard for emergency response teams and authorities.
+AXIOM Sentinel is a comprehensive emergency management platform that combines real-time disaster monitoring, AI-powered predictions, incident reporting, and route optimization. The system uses modern web technologies with PostgreSQL database integration to provide a unified dashboard for emergency response teams and authorities.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Recent Changes (July 22, 2025)
+
+✓ **Database Integration Complete**: Successfully migrated from in-memory storage to PostgreSQL with Drizzle ORM
+✓ **Real Interactive Maps**: Integrated OpenStreetMap with Leaflet for authentic geographic visualization
+✓ **Enhanced Schema**: Added comprehensive tables for earthquake data, model metrics, and prediction tracking
+✓ **Persistent Data Storage**: Real USGS earthquake data now stored in database for faster retrieval
+✓ **Fluid Database Operations**: All CRUD operations working smoothly with proper error handling
 
 ## System Architecture
 
