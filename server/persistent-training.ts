@@ -134,8 +134,21 @@ export class PersistentTrainingManager {
     };
 
     try {
-      // Get earthquake data for training - restore original high-volume processing
-      const earthquakeData = await storage.getAllEarthquakeData();
+      // Get earthquake data for training with retry logic
+      let earthquakeData;
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          earthquakeData = await storage.getAllEarthquakeData();
+          break;
+        } catch (error) {
+          retries--;
+          if (retries === 0) throw error;
+          console.log(`Retrying data fetch... ${retries} attempts remaining`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+      
       const baseDataPoints = Math.min(48000, earthquakeData.length); // Restored to original 44k-60k range
       const sessionMultiplier = Math.min(1.5, 1.0 + (sessionCount * 0.08)); // Moderate scaling
       const newDataPoints = Math.floor(baseDataPoints * sessionCount * sessionMultiplier); // Much higher data processing
@@ -209,8 +222,24 @@ export class PersistentTrainingManager {
         trainingSessions: newSessions
       };
 
-      // Save to database for persistence
-      await this.saveMetrics('pytorch');
+      // Save to database for persistence with retry logic
+      let saveRetries = 3;
+      while (saveRetries > 0) {
+        try {
+          await this.saveMetrics('pytorch');
+          console.log(`✓ Saved pytorch metrics: ${newAccuracy.toFixed(1)}% accuracy, ${newDataCount} data points`);
+          break;
+        } catch (error) {
+          saveRetries--;
+          if (saveRetries === 0) {
+            console.error('Failed to save metrics after retries:', error);
+            // Continue anyway - metrics are in memory
+            break;
+          }
+          console.log(`Retrying metric save... ${saveRetries} attempts remaining`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
 
       this.trainingStatus.pytorch = {
         isTraining: false,
