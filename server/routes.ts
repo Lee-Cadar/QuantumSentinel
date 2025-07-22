@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertDisasterSchema, insertIncidentSchema, insertPredictionSchema, insertAlertSchema } from "@shared/schema";
 import { ollamaEarthquakePredictionAI } from "./ollama-prediction";
+import { disasterNewsService } from "./news-service";
 import { z } from "zod";
 
 const routeOptimizationSchema = z.object({
@@ -383,6 +384,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(metrics);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch metrics" });
+    }
+  });
+
+  // News endpoints
+  app.get("/api/news", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 20;
+      const articles = await storage.getNewsArticles(limit);
+      res.json(articles);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch news articles" });
+    }
+  });
+
+  app.get("/api/news/:disasterType", async (req, res) => {
+    try {
+      const { disasterType } = req.params;
+      const articles = await storage.getNewsArticlesByType(disasterType);
+      res.json(articles);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch news articles by type" });
+    }
+  });
+
+  app.post("/api/news/refresh", async (req, res) => {
+    try {
+      console.log('Refreshing natural disaster news...');
+      const result = await disasterNewsService.refreshNews();
+      
+      res.json({
+        message: `Refreshed ${result.count} new disaster news articles`,
+        count: result.count,
+        sources: ['ReliefWeb', 'GDACS'],
+        lastUpdated: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('News refresh error:', error);
+      res.status(500).json({ error: "Failed to refresh news articles" });
     }
   });
 

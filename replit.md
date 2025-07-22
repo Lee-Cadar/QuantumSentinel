@@ -15,6 +15,8 @@ Preferred communication style: Simple, everyday language.
 ✓ **Enhanced Schema**: Added comprehensive tables for earthquake data, model metrics, and prediction tracking
 ✓ **Persistent Data Storage**: Real USGS earthquake data now stored in database for faster retrieval
 ✓ **Fluid Database Operations**: All CRUD operations working smoothly with proper error handling
+✓ **Natural Disaster News Widget**: Integrated real-time news feed using ReliefWeb and GDACS APIs with 30+ articles
+✓ **News Data Pipeline**: Automated news fetching, processing, and storage with disaster type classification
 
 ## System Architecture
 

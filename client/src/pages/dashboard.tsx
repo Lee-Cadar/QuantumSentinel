@@ -9,6 +9,7 @@ import EarthquakeMap from "@/components/earthquake-map";
 import IncidentReporting from "@/components/incident-reporting";
 import RouteOptimization from "@/components/route-optimization";
 import RecentActivity from "@/components/recent-activity";
+import { NewsWidget } from "@/components/news-widget";
 
 export default function Dashboard() {
   const { data: predictions = [] } = useQuery({
@@ -42,9 +43,12 @@ export default function Dashboard() {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <IncidentReporting />
-          <RouteOptimization />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <IncidentReporting />
+            <RouteOptimization />
+          </div>
+          <NewsWidget />
         </div>
 
         <RecentActivity />

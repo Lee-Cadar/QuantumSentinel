@@ -134,7 +134,29 @@ export const insertModelMetricsSchema = createInsertSchema(modelMetrics).omit({
   id: true,
 });
 
+export const newsArticles = pgTable("news_articles", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  content: text("content"),
+  url: text("url").notNull(),
+  source: text("source").notNull(),
+  category: text("category").notNull().default("natural-disaster"),
+  publishedAt: timestamp("published_at").notNull(),
+  imageUrl: text("image_url"),
+  relevanceScore: real("relevance_score").default(0),
+  disasterType: text("disaster_type"),
+  location: text("location"),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+});
+
+export const insertNewsArticleSchema = createInsertSchema(newsArticles).omit({
+  id: true,
+});
+
 export type EarthquakeData = typeof earthquakeData.$inferSelect;
 export type InsertEarthquakeData = z.infer<typeof insertEarthquakeDataSchema>;
 export type ModelMetrics = typeof modelMetrics.$inferSelect;
 export type InsertModelMetrics = z.infer<typeof insertModelMetricsSchema>;
+export type NewsArticle = typeof newsArticles.$inferSelect;
+export type InsertNewsArticle = z.infer<typeof insertNewsArticleSchema>;

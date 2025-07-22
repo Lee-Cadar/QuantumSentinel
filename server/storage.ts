@@ -1,11 +1,12 @@
-import { disasters, incidents, predictions, alerts, earthquakeData, modelMetrics } from "@shared/schema";
+import { disasters, incidents, predictions, alerts, earthquakeData, modelMetrics, newsArticles } from "@shared/schema";
 import type { 
   Disaster, InsertDisaster, 
   Incident, InsertIncident, 
   Prediction, InsertPrediction, 
   Alert, InsertAlert,
   EarthquakeData, InsertEarthquakeData,
-  ModelMetrics, InsertModelMetrics
+  ModelMetrics, InsertModelMetrics,
+  NewsArticle, InsertNewsArticle
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte } from "drizzle-orm";
@@ -40,6 +41,12 @@ export interface IStorage {
   // Model Metrics
   getLatestModelMetrics(): Promise<ModelMetrics | undefined>;
   updateModelMetrics(metrics: InsertModelMetrics): Promise<ModelMetrics>;
+  
+  // News Articles
+  getNewsArticles(limit?: number): Promise<NewsArticle[]>;
+  getNewsArticlesByType(disasterType: string): Promise<NewsArticle[]>;
+  getNewsArticleByUrl(url: string): Promise<NewsArticle | undefined>;
+  createNewsArticle(article: InsertNewsArticle): Promise<NewsArticle>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -159,6 +166,32 @@ export class DatabaseStorage implements IStorage {
       .values({ ...metrics, lastUpdated: new Date() })
       .returning();
     return updatedMetrics;
+  }
+
+  async getNewsArticles(limit: number = 20): Promise<NewsArticle[]> {
+    return await db.select().from(newsArticles)
+      .orderBy(desc(newsArticles.publishedAt))
+      .limit(limit);
+  }
+
+  async getNewsArticlesByType(disasterType: string): Promise<NewsArticle[]> {
+    return await db.select().from(newsArticles)
+      .where(eq(newsArticles.disasterType, disasterType))
+      .orderBy(desc(newsArticles.publishedAt));
+  }
+
+  async getNewsArticleByUrl(url: string): Promise<NewsArticle | undefined> {
+    const [article] = await db.select().from(newsArticles)
+      .where(eq(newsArticles.url, url));
+    return article || undefined;
+  }
+
+  async createNewsArticle(article: InsertNewsArticle): Promise<NewsArticle> {
+    const [newArticle] = await db
+      .insert(newsArticles)
+      .values(article)
+      .returning();
+    return newArticle;
   }
 }
 
